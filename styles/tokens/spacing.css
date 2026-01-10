@@ -1,0 +1,86 @@
+/**
+ * Spacing Design Tokens
+ * 
+ * Based on 8px base grid system (common in modern design systems)
+ * Values to be validated against Figma design
+ */
+
+:root {
+  /* Base Spacing Unit */
+  --spacing-base: 8px;
+
+  /* Spacing Scale (8px grid) */
+  --spacing-0: 0;
+  --spacing-1: calc(var(--spacing-base) * 0.5);  /* 4px */
+  --spacing-2: calc(var(--spacing-base) * 1);    /* 8px */
+  --spacing-3: calc(var(--spacing-base) * 1.5);  /* 12px */
+  --spacing-4: calc(var(--spacing-base) * 2);    /* 16px */
+  --spacing-5: calc(var(--spacing-base) * 2.5);  /* 20px */
+  --spacing-6: calc(var(--spacing-base) * 3);    /* 24px */
+  --spacing-8: calc(var(--spacing-base) * 4);    /* 32px */
+  --spacing-10: calc(var(--spacing-base) * 5);   /* 40px */
+  --spacing-12: calc(var(--spacing-base) * 6);   /* 48px */
+  --spacing-16: calc(var(--spacing-base) * 8);   /* 64px */
+  --spacing-20: calc(var(--spacing-base) * 10);  /* 80px */
+  --spacing-24: calc(var(--spacing-base) * 12);  /* 96px */
+
+  /* Semantic Spacing Names */
+  --spacing-xs: var(--spacing-1);      /* 4px - Tight spacing, icon padding */
+  --spacing-sm: var(--spacing-2);      /* 8px - Component internal padding */
+  --spacing-md: var(--spacing-4);      /* 16px - Standard gap between elements */
+  --spacing-lg: var(--spacing-6);      /* 24px - Section spacing */
+  --spacing-xl: var(--spacing-8);      /* 32px - Large section spacing */
+  --spacing-2xl: var(--spacing-12);    /* 48px - Page-level spacing */
+  --spacing-3xl: var(--spacing-16);    /* 64px - Major section separation */
+
+  /* Padding Tokens */
+  --padding-xs: var(--spacing-1);
+  --padding-sm: var(--spacing-2);
+  --padding-md: var(--spacing-4);
+  --padding-lg: var(--spacing-6);
+  --padding-xl: var(--spacing-8);
+
+  /* Margin Tokens */
+  --margin-xs: var(--spacing-1);
+  --margin-sm: var(--spacing-2);
+  --margin-md: var(--spacing-4);
+  --margin-lg: var(--spacing-6);
+  --margin-xl: var(--spacing-8);
+  --margin-2xl: var(--spacing-12);
+  --margin-3xl: var(--spacing-16);
+
+  /* Gap Tokens (for flex/grid layouts) */
+  --gap-xs: var(--spacing-1);
+  --gap-sm: var(--spacing-2);
+  --gap-md: var(--spacing-4);
+  --gap-lg: var(--spacing-6);
+  --gap-xl: var(--spacing-8);
+  --gap-2xl: var(--spacing-12);
+
+  /* Component-Specific Spacing */
+  --spacing-button-padding-x: var(--spacing-4);
+  --spacing-button-padding-y: var(--spacing-2);
+  --spacing-button-padding-x-lg: var(--spacing-6);
+  --spacing-button-padding-y-lg: var(--spacing-3);
+
+  --spacing-input-padding-x: var(--spacing-4);
+  --spacing-input-padding-y: var(--spacing-3);
+  --spacing-input-padding-x-sm: var(--spacing-3);
+  --spacing-input-padding-y-sm: var(--spacing-2);
+
+  --spacing-card-padding: var(--spacing-6);
+  --spacing-card-padding-sm: var(--spacing-4);
+  --spacing-card-padding-lg: var(--spacing-8);
+
+  --spacing-container-padding-x: var(--spacing-4);
+  --spacing-container-padding-y: var(--spacing-6);
+  --spacing-container-max-width: 1200px;
+
+  --spacing-section-spacing: var(--spacing-12);
+  --spacing-section-spacing-sm: var(--spacing-8);
+
+  --spacing-sidebar-width: 280px;
+  --spacing-sidebar-width-collapsed: 72px;
+  --spacing-header-height: 64px;
+  --spacing-bottom-nav-height: 72px;
+}

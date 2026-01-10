@@ -1,0 +1,122 @@
+/**
+ * Typography Design Tokens
+ * 
+ * Based on Public Sans variable font
+ * Values to be validated against Figma design
+ */
+
+:root {
+  /* Font Families */
+  --font-family-primary: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semi-bold: 600;
+  --font-weight-bold: 700;
+
+  /* Font Sizes (to be validated against Figma) */
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  --font-size-4xl: 2.25rem;     /* 36px */
+  --font-size-5xl: 3rem;        /* 48px */
+
+  /* Line Heights */
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+
+  /* Letter Spacing */
+  --letter-spacing-tighter: -0.05em;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
+
+  /* Typography Scale - Headings */
+  --typography-h1-font-size: var(--font-size-4xl);
+  --typography-h1-font-weight: var(--font-weight-bold);
+  --typography-h1-line-height: var(--line-height-tight);
+  --typography-h1-letter-spacing: var(--letter-spacing-tight);
+
+  --typography-h2-font-size: var(--font-size-3xl);
+  --typography-h2-font-weight: var(--font-weight-bold);
+  --typography-h2-line-height: var(--line-height-tight);
+  --typography-h2-letter-spacing: var(--letter-spacing-tight);
+
+  --typography-h3-font-size: var(--font-size-2xl);
+  --typography-h3-font-weight: var(--font-weight-semi-bold);
+  --typography-h3-line-height: var(--line-height-snug);
+  --typography-h3-letter-spacing: var(--letter-spacing-normal);
+
+  --typography-h4-font-size: var(--font-size-xl);
+  --typography-h4-font-weight: var(--font-weight-semi-bold);
+  --typography-h4-line-height: var(--line-height-snug);
+  --typography-h4-letter-spacing: var(--letter-spacing-normal);
+
+  --typography-h5-font-size: var(--font-size-lg);
+  --typography-h5-font-weight: var(--font-weight-semi-bold);
+  --typography-h5-line-height: var(--line-height-normal);
+  --typography-h5-letter-spacing: var(--letter-spacing-normal);
+
+  --typography-h6-font-size: var(--font-size-base);
+  --typography-h6-font-weight: var(--font-weight-semi-bold);
+  --typography-h6-line-height: var(--line-height-normal);
+  --typography-h6-letter-spacing: var(--letter-spacing-normal);
+
+  /* Typography Scale - Body Text */
+  --typography-body-large-font-size: var(--font-size-lg);
+  --typography-body-large-font-weight: var(--font-weight-regular);
+  --typography-body-large-line-height: var(--line-height-relaxed);
+
+  --typography-body-font-size: var(--font-size-base);
+  --typography-body-font-weight: var(--font-weight-regular);
+  --typography-body-line-height: var(--line-height-normal);
+
+  --typography-body-small-font-size: var(--font-size-sm);
+  --typography-body-small-font-weight: var(--font-weight-regular);
+  --typography-body-small-line-height: var(--line-height-normal);
+
+  /* Typography Scale - Specialized */
+  --typography-caption-font-size: var(--font-size-xs);
+  --typography-caption-font-weight: var(--font-weight-regular);
+  --typography-caption-line-height: var(--line-height-normal);
+
+  --typography-label-font-size: var(--font-size-sm);
+  --typography-label-font-weight: var(--font-weight-medium);
+  --typography-label-line-height: var(--line-height-normal);
+  --typography-label-letter-spacing: var(--letter-spacing-wide);
+
+  --typography-button-font-size: var(--font-size-base);
+  --typography-button-font-weight: var(--font-weight-semi-bold);
+  --typography-button-line-height: var(--line-height-tight);
+  --typography-button-letter-spacing: var(--letter-spacing-wide);
+
+  --typography-link-font-size: var(--font-size-base);
+  --typography-link-font-weight: var(--font-weight-medium);
+  --typography-link-line-height: var(--line-height-normal);
+
+  /* Number/Currency Display (larger, for amounts) */
+  --typography-amount-large-font-size: var(--font-size-4xl);
+  --typography-amount-large-font-weight: var(--font-weight-bold);
+  --typography-amount-large-line-height: var(--line-height-tight);
+
+  --typography-amount-medium-font-size: var(--font-size-2xl);
+  --typography-amount-medium-font-weight: var(--font-weight-bold);
+  --typography-amount-medium-line-height: var(--line-height-tight);
+
+  --typography-amount-small-font-size: var(--font-size-lg);
+  --typography-amount-small-font-weight: var(--font-weight-semi-bold);
+  --typography-amount-small-line-height: var(--line-height-tight);
+}

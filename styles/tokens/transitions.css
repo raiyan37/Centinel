@@ -1,0 +1,55 @@
+/**
+ * Transition & Animation Design Tokens
+ * 
+ * Timing functions and duration tokens
+ * Values to be validated against Figma design
+ */
+
+:root {
+  /* Transition Durations */
+  --transition-duration-instant: 0ms;
+  --transition-duration-fast: 150ms;
+  --transition-duration-base: 200ms;
+  --transition-duration-slow: 300ms;
+  --transition-duration-slower: 500ms;
+
+  /* Transition Timing Functions */
+  --transition-ease-linear: linear;
+  --transition-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Common Transitions */
+  --transition-all: all var(--transition-duration-base) var(--transition-ease-in-out);
+  --transition-colors: color var(--transition-duration-base) var(--transition-ease-in-out),
+                       background-color var(--transition-duration-base) var(--transition-ease-in-out),
+                       border-color var(--transition-duration-base) var(--transition-ease-in-out);
+  --transition-opacity: opacity var(--transition-duration-base) var(--transition-ease-in-out);
+  --transition-transform: transform var(--transition-duration-base) var(--transition-ease-out);
+  --transition-shadow: box-shadow var(--transition-duration-base) var(--transition-ease-in-out);
+
+  /* Component-Specific Transitions */
+  --transition-button: var(--transition-colors), var(--transition-shadow);
+  --transition-input: var(--transition-colors), var(--transition-shadow);
+  --transition-modal: opacity var(--transition-duration-slow) var(--transition-ease-out),
+                      transform var(--transition-duration-slow) var(--transition-ease-out);
+  --transition-sidebar: transform var(--transition-duration-slow) var(--transition-ease-out);
+  --transition-dropdown: opacity var(--transition-duration-fast) var(--transition-ease-out),
+                         transform var(--transition-duration-fast) var(--transition-ease-out);
+
+  /* Animation Durations */
+  --animation-duration-fast: 200ms;
+  --animation-duration-base: 300ms;
+  --animation-duration-slow: 500ms;
+
+  /* Z-Index Scale */
+  --z-index-base: 0;
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+}
