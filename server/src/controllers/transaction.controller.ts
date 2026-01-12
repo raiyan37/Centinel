@@ -171,6 +171,20 @@ export const createTransaction = catchErrors(async (req: Request, res: Response)
     recurring: recurring || false,
   });
   
+  // Update user balance (only for transactions in August 2024 - current month)
+  // This ensures bill templates (created in July) don't affect balance
+  // But actual payments (in August) do affect balance
+  const transactionDate = new Date(date);
+  const currentMonthStart = new Date('2024-08-01');
+  const currentMonthEnd = new Date('2024-08-31');
+  
+  if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
+    const { User } = await import('../models/index.js');
+    await User.findByIdAndUpdate(userId, {
+      $inc: { balance: amount }, // Positive for income, negative for expenses
+    });
+  }
+  
   res.status(HTTP_STATUS.CREATED).json({
     success: true,
     message: 'Transaction created successfully',
@@ -192,6 +206,13 @@ export const updateTransaction = catchErrors(async (req: Request, res: Response)
   const { id } = req.params;
   const { name, amount, category, date, avatar, recurring } = req.body;
   
+  // Get original transaction first
+  const oldTransaction = await Transaction.findOne({ _id: id, userId });
+  
+  if (!oldTransaction) {
+    throw new AppError('Transaction not found', HTTP_STATUS.NOT_FOUND, 'NOT_FOUND');
+  }
+  
   // Find and update
   const transaction = await Transaction.findOneAndUpdate(
     { _id: id, userId },
@@ -206,8 +227,37 @@ export const updateTransaction = catchErrors(async (req: Request, res: Response)
     { new: true, runValidators: true }
   );
   
-  if (!transaction) {
-    throw new AppError('Transaction not found', HTTP_STATUS.NOT_FOUND, 'NOT_FOUND');
+  // Update balance if amount or date changed and affects current month
+  const currentMonthStart = new Date('2024-08-01');
+  const currentMonthEnd = new Date('2024-08-31');
+  
+  const oldDate = oldTransaction.date;
+  const newDate = transaction!.date;
+  const oldAmount = oldTransaction.amount;
+  const newAmount = transaction!.amount;
+  
+  const oldInCurrentMonth = oldDate >= currentMonthStart && oldDate <= currentMonthEnd;
+  const newInCurrentMonth = newDate >= currentMonthStart && newDate <= currentMonthEnd;
+  
+  if (oldInCurrentMonth || newInCurrentMonth) {
+    const { User } = await import('../models/index.js');
+    let balanceChange = 0;
+    
+    // If old was in current month, reverse it
+    if (oldInCurrentMonth) {
+      balanceChange -= oldAmount;
+    }
+    
+    // If new is in current month, apply it
+    if (newInCurrentMonth) {
+      balanceChange += newAmount;
+    }
+    
+    if (balanceChange !== 0) {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { balance: balanceChange },
+      });
+    }
   }
   
   res.status(HTTP_STATUS.OK).json({
@@ -234,6 +284,18 @@ export const deleteTransaction = catchErrors(async (req: Request, res: Response)
   
   if (!transaction) {
     throw new AppError('Transaction not found', HTTP_STATUS.NOT_FOUND, 'NOT_FOUND');
+  }
+  
+  // Update user balance (reverse the transaction if it was in current month)
+  const transactionDate = transaction.date;
+  const currentMonthStart = new Date('2024-08-01');
+  const currentMonthEnd = new Date('2024-08-31');
+  
+  if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
+    const { User } = await import('../models/index.js');
+    await User.findByIdAndUpdate(userId, {
+      $inc: { balance: -transaction.amount }, // Reverse the transaction
+    });
   }
   
   res.status(HTTP_STATUS.OK).json({
