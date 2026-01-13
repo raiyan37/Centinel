@@ -57,7 +57,7 @@ export function DepositPotForm({
   const depositSchema = React.useMemo(() => {
     return z.object({
       amount: z
-        .number({ invalid_type_error: 'Please enter a valid amount' })
+        .number({ message: 'Please enter a valid amount' })
         .positive('Amount must be greater than 0')
         .max(pot ? pot.target - pot.total : 1000000, 'Amount exceeds remaining target'),
     });
@@ -105,7 +105,6 @@ export function DepositPotForm({
   if (!pot) return null;
 
   // Calculate progress
-  const currentPercentage = calculatePercentage(pot.total, pot.target);
   const newTotal = pot.total + amountValue;
   const newPercentage = calculatePercentage(newTotal, pot.target);
   const remaining = pot.target - pot.total;

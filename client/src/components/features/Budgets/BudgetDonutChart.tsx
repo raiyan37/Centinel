@@ -80,7 +80,7 @@ export function BudgetDonutChart({
             {isOverBudget ? (
               <Cell fill={spentColor} />
             ) : (
-              data.map((entry, index) => (
+              data.map((_entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={index === 0 ? spentColor : remainingColor}

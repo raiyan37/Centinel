@@ -57,7 +57,7 @@ export function WithdrawPotForm({
   const withdrawSchema = React.useMemo(() => {
     return z.object({
       amount: z
-        .number({ invalid_type_error: 'Please enter a valid amount' })
+        .number({ message: 'Please enter a valid amount' })
         .positive('Amount must be greater than 0')
         .max(pot?.total || 0, 'Amount exceeds available funds'),
     });

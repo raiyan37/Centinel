@@ -41,7 +41,7 @@ const addPotSchema = z.object({
     .min(1, 'Please enter a pot name')
     .max(30, 'Name cannot exceed 30 characters'),
   target: z
-    .number({ invalid_type_error: 'Please enter a valid amount' })
+    .number({ message: 'Please enter a valid amount' })
     .positive('Target must be greater than 0')
     .max(1000000, 'Target cannot exceed $1,000,000'),
   theme: z.string().min(1, 'Please select a theme color'),

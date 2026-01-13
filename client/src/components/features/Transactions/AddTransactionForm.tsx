@@ -50,11 +50,11 @@ const addTransactionSchema = z.object({
     .min(1, 'Please enter a name')
     .max(100, 'Name cannot exceed 100 characters'),
   amount: z
-    .number({ invalid_type_error: 'Please enter a valid amount' })
+    .number({ message: 'Please enter a valid amount' })
     .refine((val) => val !== 0, 'Amount cannot be zero'),
   category: z.string().min(1, 'Please select a category'),
   date: z.string().min(1, 'Please select a date'),
-  recurring: z.boolean().default(false),
+  recurring: z.boolean(),
 });
 
 type AddTransactionFormData = z.infer<typeof addTransactionSchema>;

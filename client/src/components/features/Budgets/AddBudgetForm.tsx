@@ -48,7 +48,7 @@ const budgetCategories = allCategories.filter((c) => c !== 'All Transactions');
 const addBudgetSchema = z.object({
   category: z.string().min(1, 'Please select a category'),
   maximum: z
-    .number({ invalid_type_error: 'Please enter a valid amount' })
+    .number({ message: 'Please enter a valid amount' })
     .positive('Amount must be greater than 0')
     .max(1000000, 'Amount cannot exceed $1,000,000'),
   theme: z.string().min(1, 'Please select a theme color'),

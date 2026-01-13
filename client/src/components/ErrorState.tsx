@@ -22,7 +22,6 @@ import { AlertCircle, WifiOff, ServerCrash, RefreshCw, Clock } from 'lucide-reac
 import { Button } from '@/components/ui';
 import {
   getErrorMessage,
-  getErrorType,
   getErrorInfo,
   type ErrorType,
 } from '@/lib/errorUtils';

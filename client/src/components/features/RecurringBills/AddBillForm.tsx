@@ -50,11 +50,11 @@ const addBillSchema = z.object({
     .min(1, 'Please enter the vendor name')
     .max(100, 'Name cannot exceed 100 characters'),
   amount: z
-    .number({ invalid_type_error: 'Please enter a valid amount' })
+    .number({ message: 'Please enter a valid amount' })
     .positive('Amount must be greater than 0'),
   category: z.string().min(1, 'Please select a category'),
   dueDay: z
-    .number({ invalid_type_error: 'Please enter a valid day' })
+    .number({ message: 'Please enter a valid day' })
     .min(1, 'Day must be between 1 and 31')
     .max(31, 'Day must be between 1 and 31'),
 });
