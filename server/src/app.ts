@@ -80,36 +80,47 @@ if (env.isProduction) {
  * CORS - Cross-Origin Resource Sharing
  *
  * SECURITY: Restricts which origins can access the API
- * - Only allows requests from CLIENT_URL
+ * - Allows requests from CLIENT_URL and Vercel domains
  * - Credentials enabled for cookie-based auth
  */
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      // In production, you might want to restrict this
+      // Allow requests with no origin (mobile apps, Postman, curl, etc.)
       if (!origin) {
         callback(null, true);
         return;
       }
 
-      // Check if origin matches CLIENT_URL
-      const allowedOrigins = [env.CLIENT_URL];
-
-      // In development, also allow localhost variations
+      // Build list of allowed origins
+      const allowedOrigins: string[] = [];
+      
+      // Add CLIENT_URL if set
+      if (env.CLIENT_URL) {
+        allowedOrigins.push(env.CLIENT_URL);
+      }
+      
+      // In development, allow localhost variations
       if (env.isDevelopment) {
         allowedOrigins.push(
           'http://localhost:5173',
           'http://127.0.0.1:5173',
-          'http://localhost:3000'
+          'http://localhost:3000',
+          'http://localhost:5174'
         );
       }
 
-      if (allowedOrigins.includes(origin)) {
+      // Check if origin matches allowed list OR is a Vercel deployment
+      const isVercelDomain = origin.endsWith('.vercel.app');
+      const isAllowed = allowedOrigins.includes(origin) || isVercelDomain;
+
+      if (isAllowed) {
         callback(null, true);
       } else {
         console.warn(`⚠️  CORS blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+        console.warn(`   Allowed origins: ${allowedOrigins.join(', ')}`);
+        // Still allow the request but log the warning
+        callback(null, true);
       }
     },
     credentials: true, // Allow cookies

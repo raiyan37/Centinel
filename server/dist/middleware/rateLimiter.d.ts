@@ -25,7 +25,7 @@ import { type RateLimitRequestHandler } from 'express-rate-limit';
  * Strict rate limiter for authentication endpoints
  *
  * SECURITY:
- * - 5 attempts per 15 minutes per IP
+ * - 10 attempts per 15 minutes per IP (increased for testing)
  * - Prevents brute force attacks on login/register
  * - Protects against credential stuffing
  */

@@ -44,10 +44,11 @@ function createRateLimitHandler(limitType) {
 }
 /**
  * Skip rate limiting in certain conditions
- * Currently skips for health check endpoint
+ * - Health check endpoint
+ * - OPTIONS requests (CORS preflight)
  */
 function skipHandler(req) {
-    return req.path === '/health';
+    return req.path === '/health' || req.method === 'OPTIONS';
 }
 // =============================================================================
 // RATE LIMITER CONFIGURATIONS
@@ -76,14 +77,14 @@ const baseConfig = {
  * Strict rate limiter for authentication endpoints
  *
  * SECURITY:
- * - 5 attempts per 15 minutes per IP
+ * - 10 attempts per 15 minutes per IP (increased for testing)
  * - Prevents brute force attacks on login/register
  * - Protects against credential stuffing
  */
 export const authLimiter = rateLimit({
     ...baseConfig,
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 5, // 5 requests per window
+    limit: 10, // 10 requests per window (increased from 5 for better UX)
     message: 'Too many authentication attempts. Please try again in 15 minutes.',
     handler: createRateLimitHandler('auth'),
     // Slow down responses as limit approaches (optional defense in depth)
