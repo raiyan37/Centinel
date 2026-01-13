@@ -248,7 +248,7 @@ export const updateTransactionSchema = z
 
 export const transactionQuerySchema = z.object({
   page: z.coerce.number().int().positive().max(10000).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+  limit: z.coerce.number().int().min(1).max(500).optional().default(10), // Max 500 for recurring bills
   search: z
     .string()
     .max(100, 'Search query too long')
