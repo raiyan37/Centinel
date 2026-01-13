@@ -27,7 +27,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosResp
  * - timeout: Request timeout in ms
  */
 export const apiClient = axios.create({
-  baseURL: '/api', // Uses Vite proxy in development
+  baseURL: import.meta.env.VITE_API_URL || '/api', // Uses env var in production, proxy in development
   withCredentials: true,
   timeout: 10000,
   headers: {

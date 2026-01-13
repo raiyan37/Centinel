@@ -1,4 +1,4 @@
-# Personal Finance App - Design System
+# Centinel - Design System
 
 > **Note:** This design system document is based on analysis of the existing codebase structure and data schema. All design tokens, measurements, and component specifications should be validated against the Figma design file.
 

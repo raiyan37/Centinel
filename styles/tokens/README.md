@@ -1,6 +1,6 @@
 # Design Tokens Documentation
 
-This directory contains all design tokens for the Personal Finance App.
+This directory contains all design tokens for the Centinel App.
 
 ## Structure
 
@@ -143,7 +143,7 @@ import './Button.module.css';
 ⚠️ **Important**: All token values should be validated against the Figma design file. Current values are estimates based on:
 - Colors extracted from `data.json`
 - Modern design system best practices
-- Common patterns for personal finance applications
+- Common patterns for personal finance applications (Centinel)
 
 ### Values to Validate in Figma:
 

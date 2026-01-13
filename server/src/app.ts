@@ -1,9 +1,9 @@
 /**
  * Express Application Setup
- * 
+ *
  * CONCEPT: This file configures the Express application.
  * It sets up middleware, routes, and error handling.
- * 
+ *
  * Middleware runs in ORDER - top to bottom.
  * Think of it like a pipeline that requests flow through.
  */
@@ -16,9 +16,8 @@ import { rateLimit } from 'express-rate-limit';
 
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { mockUser } from './middleware/mockUser.js';
 
-// Import routes (we'll create these next)
+// Import routes
 import routes from './routes/index.js';
 
 // Create Express app
@@ -38,18 +37,20 @@ app.use(helmet());
  * CORS - Cross-Origin Resource Sharing
  * Allows our frontend (different port) to make requests to this API
  */
-app.use(cors({
-  origin: env.CLIENT_URL,
-  credentials: true,  // Allow cookies
-}));
+app.use(
+  cors({
+    origin: env.CLIENT_URL,
+    credentials: true, // Allow cookies
+  })
+);
 
 /**
  * Rate Limiter - Prevent abuse
  * Limits each IP to 100 requests per 15 minutes
  */
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  limit: 100,                 // 100 requests per window
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // 100 requests per window
   message: { message: 'Too many requests, please try again later.' },
 });
 app.use(limiter);
@@ -77,25 +78,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // =============================================================================
-// DEVELOPMENT MIDDLEWARE
-// =============================================================================
-
-/**
- * Mock User
- * For development: assigns a mock user to all requests
- * TODO: Replace with real auth middleware in production
- */
-if (env.isDevelopment) {
-  app.use(mockUser);
-}
-
-// =============================================================================
 // ROUTES
 // =============================================================================
 
 /**
  * API Routes
  * All routes are prefixed with /api
+ *
+ * Authentication is now handled per-route:
+ * - /api/auth/* - Public auth routes
+ * - /api/transactions, /api/budgets, etc. - Protected routes
  */
 app.use('/api', routes);
 

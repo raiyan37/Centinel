@@ -1,7 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "Personal Finance App Backend",
+  "description": "Centinel App Backend",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
