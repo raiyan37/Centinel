@@ -181,11 +181,12 @@ export const register = catchErrors(async (req: Request, res: Response) => {
   const token = generateToken(user._id.toString());
   setAuthCookie(res, token);
 
-  // Return user data (without password)
+  // Return user data (without password) and token for client storage
   res.status(201).json({
     success: true,
     data: {
       user: user.omitPassword(),
+      token, // Include token for Authorization header auth (proxy setups)
     },
   });
 });
@@ -238,11 +239,12 @@ export const login = catchErrors(async (req: Request, res: Response) => {
   const token = generateToken(user._id.toString());
   setAuthCookie(res, token);
 
-  // Return user data
+  // Return user data and token for client storage
   res.json({
     success: true,
     data: {
       user: user.omitPassword(),
+      token, // Include token for Authorization header auth (proxy setups)
     },
   });
 });
@@ -320,11 +322,12 @@ export const googleAuth = catchErrors(async (req: Request, res: Response) => {
   const token = generateToken(user._id.toString());
   setAuthCookie(res, token);
 
-  // Return user data
+  // Return user data and token for client storage
   res.json({
     success: true,
     data: {
       user: user.omitPassword(),
+      token, // Include token for Authorization header auth (proxy setups)
     },
   });
 });

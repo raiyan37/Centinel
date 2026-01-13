@@ -11,9 +11,37 @@
  * - Request/response interceptors for error handling
  * - Automatic error logging in development
  * - Network error detection
+ * - Authorization header authentication (for proxy setups)
  */
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
+
+// =============================================================================
+// TOKEN STORAGE
+// =============================================================================
+
+const TOKEN_KEY = 'auth_token';
+
+/**
+ * Get stored auth token
+ */
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+/**
+ * Store auth token
+ */
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+/**
+ * Remove stored auth token
+ */
+export function removeStoredToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
 
 // =============================================================================
 // AXIOS CONFIGURATION
@@ -40,13 +68,19 @@ export const apiClient = axios.create({
 // =============================================================================
 
 /**
- * Request interceptor for logging and request modification
+ * Request interceptor for logging and adding auth headers
  * 
  * - Logs requests in development mode
- * - Can be extended to add auth headers, etc.
+ * - Adds Authorization header with stored token (for proxy setups)
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Add Authorization header if token exists
+    const token = getStoredToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     // Log requests in development
     if (import.meta.env.DEV) {
       console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
@@ -124,6 +158,7 @@ export interface AuthResponse {
   success: boolean;
   data: {
     user: User;
+    token?: string; // Token for Authorization header auth (proxy setups)
   };
 }
 
@@ -147,6 +182,10 @@ export interface LoginData {
  */
 export async function registerUser(data: RegisterData): Promise<AuthResponse> {
   const response = await apiClient.post<AuthResponse>('/auth/register', data);
+  // Store token for Authorization header auth
+  if (response.data.data.token) {
+    setStoredToken(response.data.data.token);
+  }
   return response.data;
 }
 
@@ -155,6 +194,10 @@ export async function registerUser(data: RegisterData): Promise<AuthResponse> {
  */
 export async function loginUser(data: LoginData): Promise<AuthResponse> {
   const response = await apiClient.post<AuthResponse>('/auth/login', data);
+  // Store token for Authorization header auth
+  if (response.data.data.token) {
+    setStoredToken(response.data.data.token);
+  }
   return response.data;
 }
 
@@ -163,6 +206,10 @@ export async function loginUser(data: LoginData): Promise<AuthResponse> {
  */
 export async function googleAuth(credential: string): Promise<AuthResponse> {
   const response = await apiClient.post<AuthResponse>('/auth/google', { credential });
+  // Store token for Authorization header auth
+  if (response.data.data.token) {
+    setStoredToken(response.data.data.token);
+  }
   return response.data;
 }
 
@@ -178,6 +225,8 @@ export async function getCurrentUser(): Promise<AuthResponse> {
  * Logout
  */
 export async function logoutUser(): Promise<{ success: boolean; message: string }> {
+  // Clear stored token
+  removeStoredToken();
   const response = await apiClient.post('/auth/logout');
   return response.data;
 }

@@ -2,16 +2,19 @@
  * Authentication Middleware
  *
  * CONCEPT: This middleware protects routes by verifying JWT tokens.
- * It extracts the token from cookies, verifies it, and attaches
- * the user ID to the request object.
+ * It extracts the token from cookies OR Authorization header, verifies it,
+ * and attaches the user ID to the request object.
  *
  * HOW IT WORKS:
- * 1. Check for token in cookies
+ * 1. Check for token in Authorization header (Bearer token) OR cookies
  * 2. Verify the token using JWT_SECRET
  * 3. Attach userId to request
  * 4. Call next() to proceed to the route handler
  *
  * If no valid token, returns 401 Unauthorized.
+ *
+ * NOTE: Authorization header is preferred for proxy setups (Vercel → Railway)
+ * since cookies are not forwarded through server-side proxies.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -37,6 +40,25 @@ interface JWTPayload {
 }
 
 /**
+ * Extract token from request
+ * Checks Authorization header first, then falls back to cookies
+ */
+function getTokenFromRequest(req: Request): string | null {
+  // Check Authorization header first (for proxy setups)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  // Fall back to cookie (for direct requests)
+  if (req.cookies.token) {
+    return req.cookies.token;
+  }
+
+  return null;
+}
+
+/**
  * Authenticate Middleware
  *
  * Verifies the JWT token and attaches userId to request.
@@ -48,8 +70,8 @@ export const authenticate = (
   next: NextFunction
 ): void => {
   try {
-    // Get token from cookie
-    const token = req.cookies.token;
+    // Get token from header or cookie
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       throw new AppError('Not authenticated. Please log in.', 401);
@@ -111,7 +133,7 @@ export const optionalAuth = (
   next: NextFunction
 ): void => {
   try {
-    const token = req.cookies.token;
+    const token = getTokenFromRequest(req);
 
     if (token) {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
