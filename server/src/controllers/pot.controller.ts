@@ -1,8 +1,8 @@
 /**
  * Pot Controller
- * 
- * CONCEPT: Pots are savings containers.
- * 
+ *
+ * SECURITY: Input validation handled by middleware.
+ *
  * IMPORTANT - Balance interactions:
  * - Deposit: Takes money FROM balance, adds to pot
  * - Withdraw: Takes money FROM pot, adds to balance
@@ -14,7 +14,8 @@ import { Pot, User } from '../models/index.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { AppError } from '../utils/AppError.js';
 import { HTTP_STATUS } from '../constants/http.js';
-import { isValidTheme } from '../constants/themes.js';
+
+// Note: Input validation is handled by middleware/validation.ts
 
 // =============================================================================
 // GET ALL POTS
@@ -68,23 +69,16 @@ export const getPot = catchErrors(async (req: Request, res: Response) => {
 // CREATE POT
 // =============================================================================
 
+/**
+ * Create Pot
+ *
+ * SECURITY: Input is pre-validated by middleware
+ */
 export const createPot = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
+  // Input is pre-validated by middleware (name sanitized, theme whitelisted)
   const { name, target, theme } = req.body;
-  
-  // Validation
-  if (!name || !target || !theme) {
-    throw new AppError(
-      'Name, target, and theme are required',
-      HTTP_STATUS.BAD_REQUEST,
-      'VALIDATION_ERROR'
-    );
-  }
-  
-  if (!isValidTheme(theme)) {
-    throw new AppError('Invalid theme color', HTTP_STATUS.BAD_REQUEST, 'VALIDATION_ERROR');
-  }
-  
+
   // Create pot (starts with 0 total)
   const pot = await Pot.create({
     userId,
@@ -234,24 +228,18 @@ export const depositToPot = catchErrors(async (req: Request, res: Response) => {
 
 /**
  * Withdraw from Pot
- * 
+ *
  * Takes money FROM pot and adds it TO the balance.
  * Pot total decreases, balance increases.
+ *
+ * SECURITY: Amount is pre-validated by middleware (positive, max $1M)
  */
 export const withdrawFromPot = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
   const { id } = req.params;
+  // Amount is pre-validated by middleware
   const { amount } = req.body;
-  
-  // Validation
-  if (!amount || amount <= 0) {
-    throw new AppError(
-      'Amount must be a positive number',
-      HTTP_STATUS.BAD_REQUEST,
-      'VALIDATION_ERROR'
-    );
-  }
-  
+
   // Find pot
   const pot = await Pot.findOne({ _id: id, userId });
   if (!pot) {

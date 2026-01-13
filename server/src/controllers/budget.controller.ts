@@ -1,8 +1,8 @@
 /**
  * Budget Controller
- * 
- * CONCEPT: Budget tracks spending limits per category.
- * 
+ *
+ * SECURITY: Input validation handled by middleware.
+ *
  * Key calculations:
  * - "spent": Sum of expenses in category for current month (August 2024)
  * - "latest 3 transactions": Most recent transactions in category (any month)
@@ -13,8 +13,8 @@ import { Budget, Transaction } from '../models/index.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { AppError } from '../utils/AppError.js';
 import { HTTP_STATUS } from '../constants/http.js';
-import { CATEGORIES } from '../constants/categories.js';
-import { isValidTheme } from '../constants/themes.js';
+
+// Note: Input validation is handled by middleware/validation.ts
 
 // Current month for "spent" calculation (August 2024 per requirements)
 const CURRENT_MONTH_START = new Date('2024-08-01T00:00:00.000Z');
@@ -146,27 +146,16 @@ export const getBudget = catchErrors(async (req: Request, res: Response) => {
 // CREATE BUDGET
 // =============================================================================
 
+/**
+ * Create Budget
+ *
+ * SECURITY: Input is pre-validated by middleware
+ */
 export const createBudget = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
+  // Input is pre-validated by middleware (category and theme are whitelisted)
   const { category, maximum, theme } = req.body;
-  
-  // Validation
-  if (!category || !maximum || !theme) {
-    throw new AppError(
-      'Category, maximum, and theme are required',
-      HTTP_STATUS.BAD_REQUEST,
-      'VALIDATION_ERROR'
-    );
-  }
-  
-  if (!CATEGORIES.includes(category)) {
-    throw new AppError('Invalid category', HTTP_STATUS.BAD_REQUEST, 'VALIDATION_ERROR');
-  }
-  
-  if (!isValidTheme(theme)) {
-    throw new AppError('Invalid theme color', HTTP_STATUS.BAD_REQUEST, 'VALIDATION_ERROR');
-  }
-  
+
   // Check if category already has a budget
   const existing = await Budget.findOne({ userId, category });
   if (existing) {

@@ -3,6 +3,8 @@
  * 
  * These are the predefined color themes for budgets and pots.
  * Colors match the design tokens from the Figma design.
+ * 
+ * SECURITY: Used for whitelist validation of theme colors
  */
 
 export const THEMES = {
@@ -22,6 +24,9 @@ export const THEMES = {
   Gold: '#CAB361',
   Orange: '#BE6C49',
 } as const;
+
+// Array of valid theme color values for validation
+export const THEME_COLORS = Object.values(THEMES) as readonly string[];
 
 // TypeScript type for theme names
 export type ThemeName = keyof typeof THEMES;

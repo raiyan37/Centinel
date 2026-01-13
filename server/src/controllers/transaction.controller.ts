@@ -1,14 +1,13 @@
 /**
  * Transaction Controller
- * 
- * CONCEPT: Controllers handle incoming requests and send responses.
- * They act as the "traffic cop" between routes and business logic.
- * 
+ *
+ * SECURITY: Input validation is handled by middleware.
+ * Controllers focus on business logic with pre-validated data.
+ *
  * Pattern:
- * 1. Receive request
- * 2. Validate input (using Zod schemas)
- * 3. Call service/model
- * 4. Send response
+ * 1. Receive validated request
+ * 2. Execute business logic
+ * 3. Send response
  */
 
 import { Request, Response } from 'express';
@@ -17,19 +16,20 @@ import { catchErrors } from '../utils/catchErrors.js';
 import { AppError } from '../utils/AppError.js';
 import { HTTP_STATUS } from '../constants/http.js';
 import { CATEGORIES } from '../constants/categories.js';
+import { escapeRegex } from '../middleware/validation.js';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-// Sort options mapping
+// Sort options mapping (whitelisted values only)
 const SORT_OPTIONS: Record<string, Record<string, 1 | -1>> = {
-  'Latest': { date: -1 },
-  'Oldest': { date: 1 },
+  Latest: { date: -1 },
+  Oldest: { date: 1 },
   'A to Z': { name: 1 },
   'Z to A': { name: -1 },
-  'Highest': { amount: -1 },
-  'Lowest': { amount: 1 },
+  Highest: { amount: -1 },
+  Lowest: { amount: 1 },
 };
 
 // =============================================================================
@@ -38,59 +38,67 @@ const SORT_OPTIONS: Record<string, Record<string, 1 | -1>> = {
 
 /**
  * Get Transactions (Paginated)
- * 
+ *
  * GET /api/transactions
- * 
- * Query params:
- * - page: number (default 1)
- * - limit: number (default 10)
- * - search: string (search by name)
- * - sort: string (Latest, Oldest, A to Z, Z to A, Highest, Lowest)
- * - filter/category: string (category name)
+ *
+ * SECURITY: Query params are pre-validated by middleware
+ * - page/limit are bounded to safe ranges
+ * - search is sanitized and regex-escaped
+ * - sort is whitelisted
+ * - category is whitelisted
  */
 export const getTransactions = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
-  
-  // Parse query parameters
-  const page = Math.max(1, parseInt(req.query.page as string) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
-  const search = (req.query.search as string) || '';
-  const sort = (req.query.sort as string) || 'Latest';
-  const category = (req.query.filter as string) || (req.query.category as string) || '';
-  
+
+  // Query params are pre-validated by middleware
+  const query = req.query as unknown as {
+    page: number;
+    limit: number;
+    search?: string;
+    sort: string;
+    filter?: string;
+    category?: string;
+  };
+  const { page, limit, search, sort, filter, category } = query;
+
   // Build query filter
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filter: any = { userId };
-  
-  // Add search filter (search by name)
+  const queryFilter: any = { userId };
+
+  // Add search filter with escaped regex (SECURITY: prevents ReDoS)
   if (search) {
-    filter.name = { $regex: search, $options: 'i' };  // Case-insensitive
+    queryFilter.name = { $regex: escapeRegex(search), $options: 'i' };
   }
-  
-  // Add category filter
-  if (category && category !== 'All Transactions' && CATEGORIES.includes(category as typeof CATEGORIES[number])) {
-    filter.category = category;
+
+  // Add category filter (pre-validated by middleware)
+  const categoryValue = filter || category;
+  if (
+    categoryValue &&
+    categoryValue !== 'All Transactions' &&
+    CATEGORIES.includes(categoryValue as (typeof CATEGORIES)[number])
+  ) {
+    queryFilter.category = categoryValue;
   }
-  
-  // Get sort configuration
+
+  // Get sort configuration (sort value is pre-validated)
   const sortConfig = SORT_OPTIONS[sort] || SORT_OPTIONS['Latest'];
-  
+
   // Calculate skip for pagination
   const skip = (page - 1) * limit;
-  
+
   // Execute queries in parallel for better performance
   const [transactions, total] = await Promise.all([
-    Transaction.find(filter)
+    Transaction.find(queryFilter)
       .sort(sortConfig)
       .skip(skip)
       .limit(limit)
-      .lean(),  // .lean() returns plain JS objects (faster)
-    Transaction.countDocuments(filter),
+      .lean(), // .lean() returns plain JS objects (faster)
+    Transaction.countDocuments(queryFilter),
   ]);
-  
+
   // Calculate total pages
   const pages = Math.ceil(total / limit);
-  
+
   // Send response
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -135,32 +143,17 @@ export const getTransaction = catchErrors(async (req: Request, res: Response) =>
 
 /**
  * Create Transaction
- * 
+ *
  * POST /api/transactions
+ *
+ * SECURITY: Input is pre-validated and sanitized by middleware
  */
 export const createTransaction = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
+  // Body is pre-validated by middleware - safe to use directly
   const { name, amount, category, date, avatar, recurring } = req.body;
-  
-  // Basic validation
-  if (!name || amount === undefined || !category || !date) {
-    throw new AppError(
-      'Name, amount, category, and date are required',
-      HTTP_STATUS.BAD_REQUEST,
-      'VALIDATION_ERROR'
-    );
-  }
-  
-  // Validate category
-  if (!CATEGORIES.includes(category)) {
-    throw new AppError(
-      'Invalid category',
-      HTTP_STATUS.BAD_REQUEST,
-      'VALIDATION_ERROR'
-    );
-  }
-  
-  // Create transaction
+
+  // Create transaction with validated data
   const transaction = await Transaction.create({
     userId,
     name,

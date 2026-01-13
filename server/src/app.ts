@@ -6,16 +6,23 @@
  *
  * Middleware runs in ORDER - top to bottom.
  * Think of it like a pipeline that requests flow through.
+ *
+ * SECURITY: Implements multiple layers of protection:
+ * - Security headers (Helmet)
+ * - CORS with strict origin
+ * - Rate limiting (IP and user-based)
+ * - Body size limits
+ * - Input validation (via routes)
  */
 
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { rateLimit } from 'express-rate-limit';
 
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { generalLimiter } from './middleware/rateLimiter.js';
 
 // Import routes
 import routes from './routes/index.js';
@@ -28,32 +35,98 @@ const app: Express = express();
 // =============================================================================
 
 /**
- * Helmet - Security headers
- * Adds various HTTP headers for security (XSS protection, etc.)
- */
-app.use(helmet());
-
-/**
- * CORS - Cross-Origin Resource Sharing
- * Allows our frontend (different port) to make requests to this API
+ * Helmet - Security Headers
+ *
+ * SECURITY: Adds various HTTP headers to protect against common attacks:
+ * - X-Content-Type-Options: Prevents MIME sniffing
+ * - X-Frame-Options: Prevents clickjacking
+ * - X-XSS-Protection: XSS filter (legacy browsers)
+ * - Strict-Transport-Security: Forces HTTPS
+ * - Content-Security-Policy: Restricts resource loading
  */
 app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true, // Allow cookies
+  helmet({
+    // Configure Content Security Policy
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    // Enable Cross-Origin policies
+    crossOriginEmbedderPolicy: false, // Allow embedded resources from other origins
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
 /**
- * Rate Limiter - Prevent abuse
- * Limits each IP to 100 requests per 15 minutes
+ * Trust Proxy
+ *
+ * SECURITY: Required for rate limiting and IP detection behind reverse proxy
+ * Set to 1 for single proxy (e.g., Railway, Heroku)
  */
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // 100 requests per window
-  message: { message: 'Too many requests, please try again later.' },
-});
-app.use(limiter);
+if (env.isProduction) {
+  app.set('trust proxy', 1);
+}
+
+/**
+ * CORS - Cross-Origin Resource Sharing
+ *
+ * SECURITY: Restricts which origins can access the API
+ * - Only allows requests from CLIENT_URL
+ * - Credentials enabled for cookie-based auth
+ */
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      // In production, you might want to restrict this
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Check if origin matches CLIENT_URL
+      const allowedOrigins = [env.CLIENT_URL];
+
+      // In development, also allow localhost variations
+      if (env.isDevelopment) {
+        allowedOrigins.push(
+          'http://localhost:5173',
+          'http://127.0.0.1:5173',
+          'http://localhost:3000'
+        );
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // Allow cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // Cache preflight for 24 hours
+  })
+);
+
+/**
+ * General Rate Limiter
+ *
+ * SECURITY: Baseline rate limiting for all endpoints
+ * - 100 requests per 15 minutes per IP
+ * - Specific limiters applied at route level for auth
+ */
+app.use(generalLimiter);
 
 // =============================================================================
 // BODY PARSING MIDDLEWARE
@@ -61,15 +134,31 @@ app.use(limiter);
 
 /**
  * JSON Parser
- * Parses JSON request bodies and makes them available on req.body
+ *
+ * SECURITY:
+ * - Limits body size to 10KB to prevent large payload attacks
+ * - Only accepts application/json content type
  */
-app.use(express.json());
+app.use(
+  express.json({
+    limit: '10kb', // SECURITY: Prevent large payload DoS attacks
+    strict: true, // Only accept arrays and objects
+  })
+);
 
 /**
  * URL-encoded Parser
- * Parses form data (application/x-www-form-urlencoded)
+ *
+ * SECURITY:
+ * - Limits body size to 10KB
+ * - extended: false uses querystring library (simpler, more secure)
  */
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  express.urlencoded({
+    extended: false, // SECURITY: Use simpler querystring parsing
+    limit: '10kb',
+  })
+);
 
 /**
  * Cookie Parser

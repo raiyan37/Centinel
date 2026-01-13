@@ -1,13 +1,16 @@
 /**
  * Global Error Handler Middleware
- * 
- * CONCEPT: Express error-handling middleware has 4 parameters (err, req, res, next).
- * This middleware catches all errors and sends consistent error responses.
- * 
- * Error flow in Express:
- * 1. Controller throws error or calls next(error)
- * 2. Error bubbles up to this middleware
- * 3. We format and send a consistent error response
+ *
+ * SECURITY: Handles errors without leaking sensitive information.
+ *
+ * Features:
+ * - Consistent error response format
+ * - No stack traces in production
+ * - No internal error details leaked
+ * - Proper logging for debugging
+ *
+ * OWASP References:
+ * - A09:2021 Security Logging and Monitoring Failures
  */
 
 import { ErrorRequestHandler } from 'express';
@@ -21,27 +24,37 @@ interface ErrorResponse {
   success: false;
   message: string;
   code: string;
-  errors?: Record<string, string[]>;  // For validation errors
-  stack?: string;  // Only in development
+  errors?: Record<string, string[]>; // For validation errors
+  stack?: string; // Only in development
 }
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  // Log error for debugging
-  console.error('❌ Error:', err);
+  // SECURITY: Log full error for debugging, but don't expose to client
+  if (env.isDevelopment) {
+    console.error('❌ Error:', err);
+  } else {
+    // In production, log less verbose error info
+    console.error('❌ Error:', {
+      message: err.message,
+      code: err.code,
+      name: err.name,
+      // Don't log stack traces in production logs (they may contain sensitive paths)
+    });
+  }
 
-  // Default error values
+  // Default error values - SECURITY: Generic message hides internal details
   let statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR;
-  let message = 'Something went wrong';
+  let message = 'An unexpected error occurred';
   let code = 'INTERNAL_ERROR';
   let errors: Record<string, string[]> | undefined;
 
-  // Handle our custom AppError
+  // Handle our custom AppError (operational errors - safe to show)
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
     code = err.code;
   }
-  // Handle Zod validation errors
+  // Handle Zod validation errors (safe to show)
   else if (err instanceof ZodError) {
     statusCode = HTTP_STATUS.BAD_REQUEST;
     message = 'Validation failed';
@@ -49,7 +62,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // Format Zod errors into a friendlier structure
     errors = {};
     err.issues.forEach((issue) => {
-      const path = issue.path.join('.');
+      const path = issue.path.join('.') || 'body';
       if (!errors![path]) {
         errors![path] = [];
       }
@@ -65,8 +78,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   // Handle Mongoose CastError (invalid ObjectId)
   else if (err.name === 'CastError') {
     statusCode = HTTP_STATUS.BAD_REQUEST;
-    message = 'Invalid ID format';
-    code = 'INVALID_ID';
+    message = 'Invalid request format';
+    code = 'INVALID_FORMAT';
   }
   // Handle duplicate key error (MongoDB)
   else if (err.code === 11000) {
@@ -74,10 +87,19 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     message = 'Resource already exists';
     code = 'DUPLICATE_ERROR';
   }
-  // Handle standard Error
-  else if (err instanceof Error) {
-    message = err.message;
+  // Handle JWT errors
+  else if (err.name === 'JsonWebTokenError') {
+    statusCode = HTTP_STATUS.UNAUTHORIZED;
+    message = 'Invalid authentication token';
+    code = 'INVALID_TOKEN';
   }
+  else if (err.name === 'TokenExpiredError') {
+    statusCode = HTTP_STATUS.UNAUTHORIZED;
+    message = 'Authentication token has expired';
+    code = 'TOKEN_EXPIRED';
+  }
+  // SECURITY: For unknown errors, don't expose internal message
+  // Just use the generic message set above
 
   // Build response
   const response: ErrorResponse = {
@@ -86,12 +108,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     code,
   };
 
-  // Add validation errors if present
+  // Add validation errors if present (these are safe to show)
   if (errors) {
     response.errors = errors;
   }
 
-  // Add stack trace in development
+  // SECURITY: Only add stack trace in development
   if (env.isDevelopment && err instanceof Error) {
     response.stack = err.stack;
   }

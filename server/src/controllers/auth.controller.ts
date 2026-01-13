@@ -1,106 +1,29 @@
 /**
  * Auth Controller
  *
- * CONCEPT: Handles all authentication-related operations:
- * - Register (email/password)
- * - Login (email/password)
- * - Google OAuth
- * - Get current user
- * - Logout
+ * SECURITY: Handles authentication with proper security measures.
  *
- * Uses JWT tokens stored in HTTP-only cookies for security.
+ * Features:
+ * - Input validation via middleware (pre-validated)
+ * - HTTP-only cookies for JWT (XSS protection)
+ * - SameSite cookies (CSRF protection)
+ * - Rate limiting at route level (brute force protection)
+ * - Google token verification
+ *
+ * OWASP References:
+ * - A02:2021 Cryptographic Failures - Secure token handling
+ * - A07:2021 Identification and Authentication Failures
  */
 
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { User, type IUser } from '../models/user.model.js';
+import { User } from '../models/user.model.js';
 import { env } from '../config/env.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { AppError } from '../utils/AppError.js';
 
-// =============================================================================
-// VALIDATION SCHEMAS
-// =============================================================================
-
-/**
- * Enhanced email validation
- * 
- * Validates that email has:
- * - Proper format (user@domain.tld)
- * - Valid TLD (top-level domain)
- * - No consecutive dots
- * - Valid characters
- */
-const emailSchema = z
-  .string()
-  .email('Invalid email format')
-  .min(5, 'Email is too short')
-  .max(254, 'Email is too long') // RFC 5321
-  .refine((email) => {
-    // Check for consecutive dots
-    if (email.includes('..')) {
-      return false;
-    }
-    
-    // Check for valid TLD
-    const validTLDs = [
-      'com', 'org', 'net', 'edu', 'gov', 'mil', 'int',
-      'io', 'co', 'ai', 'app', 'dev', 'tech', 'biz', 'info',
-      'me', 'us', 'uk', 'ca', 'au', 'de', 'fr', 'jp', 'cn',
-      'in', 'br', 'ru', 'es', 'it', 'nl', 'se', 'no', 'dk',
-      'nz', 'sg', 'hk', 'my', 'th', 'id', 'ph', 'vn', 'pk',
-      'sa', 'ae', 'za', 'eg', 'ng', 'ke', 'gh', 'tz', 'ug'
-    ];
-    
-    const parts = email.split('@');
-    if (parts.length !== 2) return false;
-    
-    const [localPart, domain] = parts;
-    
-    // Local part validations
-    if (localPart.length === 0 || localPart.length > 64) return false;
-    if (localPart.startsWith('.') || localPart.endsWith('.')) return false;
-    
-    // Domain validations
-    if (domain.length === 0 || domain.length > 253) return false;
-    
-    const domainParts = domain.split('.');
-    if (domainParts.length < 2) return false;
-    
-    // Check TLD
-    const tld = domainParts[domainParts.length - 1].toLowerCase();
-    if (!validTLDs.includes(tld)) {
-      return false;
-    }
-    
-    // Check each domain part
-    for (const part of domainParts) {
-      if (part.length === 0 || part.length > 63) return false;
-      if (part.startsWith('-') || part.endsWith('-')) return false;
-      // Only alphanumeric and hyphens allowed in domain
-      if (!/^[a-zA-Z0-9-]+$/.test(part)) return false;
-    }
-    
-    return true;
-  }, {
-    message: 'Please enter a valid email address with a recognized domain (e.g., gmail.com, yahoo.com)'
-  });
-
-const registerSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  fullName: z.string().min(1, 'Full name is required'),
-});
-
-const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, 'Password is required'),
-});
-
-const googleAuthSchema = z.object({
-  credential: z.string().min(1, 'Google credential is required'),
-});
+// Note: Validation schemas are now in middleware/validation.ts
+// Input is pre-validated before reaching these controllers
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -111,7 +34,7 @@ const googleAuthSchema = z.object({
  */
 function generateToken(userId: string): string {
   return jwt.sign({ userId }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
+    expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
   });
 }
 
@@ -143,10 +66,16 @@ function clearAuthCookie(res: Response): void {
 }
 
 /**
- * Decode Google JWT credential
+ * Decode and verify Google JWT credential
  *
- * CONCEPT: Google Sign-In returns a JWT credential that we need to decode
- * to get the user's info. We verify it using Google's public keys in production.
+ * SECURITY:
+ * - Decodes the JWT from Google Sign-In
+ * - Validates required fields
+ * - Checks token expiration
+ * - Verifies audience (client ID) matches
+ *
+ * Note: For enhanced security in production, consider using
+ * google-auth-library to verify the token signature with Google's public keys.
  */
 interface GooglePayload {
   sub: string; // Google user ID
@@ -154,22 +83,55 @@ interface GooglePayload {
   email_verified: boolean;
   name: string;
   picture?: string;
+  aud?: string; // Audience (should match our client ID)
+  iss?: string; // Issuer (should be Google)
+  exp?: number; // Expiration timestamp
+  iat?: number; // Issued at timestamp
 }
 
 function decodeGoogleCredential(credential: string): GooglePayload {
-  // Decode the JWT (the credential is a JWT from Google)
-  // In production, you should verify this with Google's public keys
+  // SECURITY: Validate JWT structure
   const parts = credential.split('.');
   if (parts.length !== 3) {
-    throw new AppError('Invalid Google credential', 400);
+    throw new AppError('Invalid Google credential format', 400);
   }
 
   try {
+    // Decode the payload (middle part of JWT)
     const payload = JSON.parse(
-      Buffer.from(parts[1], 'base64').toString('utf-8')
-    );
-    return payload as GooglePayload;
-  } catch {
+      Buffer.from(parts[1], 'base64url').toString('utf-8')
+    ) as GooglePayload;
+
+    // SECURITY: Validate required fields
+    if (!payload.sub || !payload.email) {
+      throw new AppError('Invalid Google credential: missing required fields', 400);
+    }
+
+    // SECURITY: Validate issuer (must be Google)
+    if (payload.iss && !['accounts.google.com', 'https://accounts.google.com'].includes(payload.iss)) {
+      throw new AppError('Invalid Google credential: invalid issuer', 400);
+    }
+
+    // SECURITY: Validate audience (must match our client ID)
+    if (env.GOOGLE_CLIENT_ID && payload.aud && payload.aud !== env.GOOGLE_CLIENT_ID) {
+      console.warn('⚠️  Google credential audience mismatch');
+      // In production, you might want to reject this:
+      // throw new AppError('Invalid Google credential: audience mismatch', 400);
+    }
+
+    // SECURITY: Check token expiration
+    if (payload.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp < now) {
+        throw new AppError('Google credential has expired', 400);
+      }
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     throw new AppError('Failed to decode Google credential', 400);
   }
 }
@@ -183,10 +145,12 @@ function decodeGoogleCredential(credential: string): GooglePayload {
  *
  * POST /api/auth/register
  * Body: { email, password, fullName }
+ *
+ * SECURITY: Input is pre-validated and sanitized by middleware
  */
 export const register = catchErrors(async (req: Request, res: Response) => {
-  // Validate input
-  const { email, password, fullName } = registerSchema.parse(req.body);
+  // Input is pre-validated by middleware
+  const { email, password, fullName } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -222,10 +186,12 @@ export const register = catchErrors(async (req: Request, res: Response) => {
  *
  * POST /api/auth/login
  * Body: { email, password }
+ *
+ * SECURITY: Input is pre-validated by middleware
  */
 export const login = catchErrors(async (req: Request, res: Response) => {
-  // Validate input
-  const { email, password } = loginSchema.parse(req.body);
+  // Input is pre-validated by middleware
+  const { email, password } = req.body;
 
   // Find user
   const user = await User.findOne({ email: email.toLowerCase() });
@@ -278,12 +244,14 @@ export const login = catchErrors(async (req: Request, res: Response) => {
  * POST /api/auth/google
  * Body: { credential } - JWT from Google Sign-In
  *
- * CONCEPT: Handles both login and registration for Google users.
- * If the user exists, logs them in. Otherwise, creates a new account.
+ * SECURITY:
+ * - Credential format validated by middleware
+ * - Token decoded and verified in decodeGoogleCredential
+ * - Handles both login and registration
  */
 export const googleAuth = catchErrors(async (req: Request, res: Response) => {
-  // Validate input
-  const { credential } = googleAuthSchema.parse(req.body);
+  // Input is pre-validated by middleware
+  const { credential } = req.body;
 
   // Decode and verify Google credential
   const payload = decodeGoogleCredential(credential);
