@@ -45,22 +45,31 @@ function generateToken(userId: string): string {
  * - Cannot be accessed by JavaScript (prevents XSS attacks)
  * - Automatically sent with requests
  * - Can be set to SameSite for CSRF protection
+ *
+ * CROSS-ORIGIN NOTE:
+ * When frontend and backend are on different domains (e.g., Vercel + Railway),
+ * we must use sameSite: 'none' with secure: true for cookies to be sent.
+ * This is required for cross-origin authentication with cookies.
  */
 function setAuthCookie(res: Response, token: string): void {
   res.cookie('token', token, {
     httpOnly: true, // Cannot be accessed by JavaScript
     secure: env.isProduction, // HTTPS only in production
-    sameSite: env.isProduction ? 'strict' : 'lax', // CSRF protection
+    sameSite: env.isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
 
 /**
  * Clear auth cookie
+ *
+ * NOTE: Cookie attributes must match setAuthCookie for proper clearing
  */
 function clearAuthCookie(res: Response): void {
   res.cookie('token', '', {
     httpOnly: true,
+    secure: env.isProduction,
+    sameSite: env.isProduction ? 'none' : 'lax',
     expires: new Date(0),
   });
 }
