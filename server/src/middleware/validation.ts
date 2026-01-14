@@ -231,6 +231,7 @@ export const createTransactionSchema = z
     date: dateSchema,
     avatar: sanitizedString(0, 500, 'Avatar').optional().default('/assets/images/avatars/default.jpg'),
     recurring: z.boolean().optional().default(false),
+    isTemplate: z.boolean().optional().default(false), // Bill templates don't affect balance
   })
   .strict();
 
@@ -242,6 +243,7 @@ export const updateTransactionSchema = z
     date: dateSchema.optional(),
     avatar: sanitizedString(0, 500, 'Avatar').optional(),
     recurring: z.boolean().optional(),
+    isTemplate: z.boolean().optional(), // Bill templates don't affect balance
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, 'At least one field is required');
