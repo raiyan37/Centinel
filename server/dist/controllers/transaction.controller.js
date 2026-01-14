@@ -28,15 +28,18 @@ const SORT_OPTIONS = {
     Lowest: { amount: 1 },
 };
 /**
- * Get current month date range
+ * Get current month date range in UTC
  * Returns start and end of current month dynamically
+ * Uses UTC to ensure consistent date handling across timezones
  */
 function getCurrentMonthRange() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const start = new Date(year, month, 1, 0, 0, 0, 0);
-    const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    // Start of month: 1st day at midnight UTC
+    const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    // End of month: last day at 23:59:59.999 UTC
+    const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
     return { start, end };
 }
 // =============================================================================

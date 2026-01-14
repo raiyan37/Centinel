@@ -10,19 +10,22 @@
  * - Recent transactions
  * - Recurring bills summary
  */
-import { User, Transaction, Budget, Pot } from '../models/index.js';
+import { Transaction, Budget, Pot } from '../models/index.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { HTTP_STATUS } from '../constants/http.js';
 /**
- * Get current month date range
+ * Get current month date range in UTC
  * Returns start and end of current month dynamically
+ * Uses UTC to ensure consistent date handling across timezones
  */
 function getCurrentMonthRange() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const start = new Date(year, month, 1, 0, 0, 0, 0);
-    const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    // Start of month: 1st day at midnight UTC
+    const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    // End of month: last day at 23:59:59.999 UTC
+    const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
     return { start, end };
 }
 // =============================================================================
@@ -30,11 +33,9 @@ function getCurrentMonthRange() {
 // =============================================================================
 export const getOverview = catchErrors(async (req, res) => {
     const userId = req.userId;
-    // Get current month range for all calculations
+    // Get current month range for all calculations (using UTC)
     const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
-    const currentDate = new Date().getDate();
-    // Get user for balance
-    const user = await User.findById(userId).lean();
+    const currentDate = new Date().getUTCDate();
     // Calculate income and expenses from transactions
     const [incomeResult, expenseResult] = await Promise.all([
         // Sum of positive amounts (income)
@@ -93,18 +94,20 @@ export const getOverview = catchErrors(async (req, res) => {
         const billDate = new Date(bill.date);
         return !(billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END);
     });
-    // Due soon = within 5 days from today
+    // Due soon = within 5 days from today (using UTC for consistency)
     const dueSoonBills = unpaidBills.filter((bill) => {
-        const dayOfMonth = new Date(bill.date).getDate();
+        const dayOfMonth = new Date(bill.date).getUTCDate();
         return dayOfMonth > currentDate && dayOfMonth <= currentDate + 5;
     });
     const totalBillsAmount = unpaidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
     const paidBillsAmount = paidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
+    // Calculate current balance dynamically (income - expenses)
+    const currentBalance = income - expenses;
     res.status(HTTP_STATUS.OK).json({
         success: true,
         data: {
             balance: {
-                current: user?.balance || 0,
+                current: currentBalance,
                 income,
                 expenses,
             },
@@ -143,7 +146,6 @@ export const getOverview = catchErrors(async (req, res) => {
 // =============================================================================
 export const getBalance = catchErrors(async (req, res) => {
     const userId = req.userId;
-    const user = await User.findById(userId).lean();
     // Calculate from transactions
     const [incomeResult, expenseResult] = await Promise.all([
         Transaction.aggregate([
@@ -157,10 +159,12 @@ export const getBalance = catchErrors(async (req, res) => {
     ]);
     const income = incomeResult.length > 0 ? incomeResult[0].total : 0;
     const expenses = expenseResult.length > 0 ? Math.abs(expenseResult[0].total) : 0;
+    // Calculate current balance dynamically (income - expenses)
+    const currentBalance = income - expenses;
     res.status(HTTP_STATUS.OK).json({
         success: true,
         data: {
-            currentBalance: user?.balance || 0,
+            currentBalance,
             income,
             expenses,
         },
