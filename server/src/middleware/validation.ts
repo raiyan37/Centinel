@@ -359,17 +359,16 @@ export function validateBody<T extends ZodSchema>(schema: T) {
  * SECURITY:
  * - Validates and sanitizes query parameters
  * - Prevents ReDoS via regex escaping for search
+ * 
+ * NOTE: In newer Express/Node versions, req.query is read-only.
+ * We store validated data in req.validatedQuery instead.
  */
 export function validateQuery<T extends ZodSchema>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const validated = schema.parse(req.query);
-      // Clear existing query params and copy validated ones
-      // (req.query object itself is read-only, but its properties can be modified)
-      for (const key of Object.keys(req.query)) {
-        delete req.query[key];
-      }
-      Object.assign(req.query, validated);
+      // Store validated query in a custom property (req.query is read-only in newer Express)
+      (req as Request & { validatedQuery: unknown }).validatedQuery = validated;
 
       next();
     } catch (error) {

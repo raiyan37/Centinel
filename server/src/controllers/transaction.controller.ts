@@ -53,8 +53,8 @@ export const getTransactions = catchErrors(async (req: Request, res: Response) =
   // #endregion
   const userId = req.userId;
 
-  // Query params are pre-validated by middleware
-  const query = req.query as unknown as {
+  // Query params are pre-validated by middleware and stored in validatedQuery
+  const query = (req as Request & { validatedQuery: unknown }).validatedQuery as {
     page: number;
     limit: number;
     search?: string;

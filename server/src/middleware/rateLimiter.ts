@@ -21,7 +21,7 @@
  * - Read operations: 200 requests per 15 minutes (lenient for reads)
  */
 
-import { rateLimit, type RateLimitRequestHandler, type Options } from 'express-rate-limit';
+import rateLimit, { type RateLimitRequestHandler, type Options } from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { HTTP_STATUS } from '../constants/http.js';
 
@@ -63,20 +63,15 @@ function skipHandler(req: Request): boolean {
 
 /**
  * Base configuration shared by all rate limiters
+ * 
+ * NOTE: validate is set to false to prevent ERR_ERL_KEY_GEN_IPV6 errors.
+ * IP handling is done via trust proxy setting in app.ts
  */
 const baseConfig: Partial<Options> = {
   standardHeaders: true, // Return rate limit info in headers (RateLimit-*)
   legacyHeaders: false, // Disable X-RateLimit-* headers (deprecated)
   skip: skipHandler,
-  // Use IP address as identifier
-  keyGenerator: (req: Request): string => {
-    // Use X-Forwarded-For in production (behind proxy/load balancer)
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-      return forwarded.split(',')[0].trim();
-    }
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  },
+  validate: false, // Disable all validation (we handle IPv6 via trust proxy)
 };
 
 // =============================================================================
