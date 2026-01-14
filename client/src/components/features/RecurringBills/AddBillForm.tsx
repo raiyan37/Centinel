@@ -102,12 +102,15 @@ export function AddBillForm({ open, onOpenChange }: AddBillFormProps) {
 
   const onSubmit = async (data: AddBillFormData) => {
     try {
-      // Create bill template in PREVIOUS month (July 2024) so it shows as "unpaid"
+      // Create bill template in PREVIOUS month so it shows as "unpaid"
       // The bill will show as upcoming/due-soon until user pays it
-      // When paid, a new transaction in August will be created
-      const year = 2024;
-      const month = 7; // July (previous month) - this makes it show as unpaid
-      const date = new Date(year, month - 1, data.dueDay);
+      // When paid, a new transaction in current month will be created
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-indexed
+      
+      // Set date to previous month with the specified due day
+      const date = new Date(currentYear, currentMonth - 1, data.dueDay);
 
       await createTransaction.mutateAsync({
         name: data.name,

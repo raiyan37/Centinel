@@ -99,7 +99,7 @@ export function AddTransactionForm({
       name: '',
       amount: undefined,
       category: '',
-      date: '2024-08-19', // August 19, 2024 (current date in app context)
+      date: new Date().toISOString().split('T')[0], // Default to today's date
       recurring: false,
     },
   });
@@ -135,7 +135,7 @@ export function AddTransactionForm({
         name: '',
         amount: undefined,
         category: '',
-        date: '2024-08-19', // August 19, 2024 (current date in app context)
+        date: new Date().toISOString().split('T')[0], // Default to today's date
         recurring: false,
       });
       setIsExpense(true);

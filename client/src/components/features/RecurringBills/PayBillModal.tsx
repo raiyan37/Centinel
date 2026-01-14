@@ -41,16 +41,29 @@ interface PayBillModalProps {
 
 export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
   const createTransaction = useCreateTransaction();
-  // Default to August 19, 2024 (current date in app context) when paying bills
-  const [paymentDate, setPaymentDate] = React.useState('2024-08-19');
+  // Default to today's date when paying bills
+  const [paymentDate, setPaymentDate] = React.useState(
+    new Date().toISOString().split('T')[0]
+  );
   const [isPaying, setIsPaying] = React.useState(false);
 
-  // Reset date when modal opens - use bill's due day in August 2024
+  // Reset date when modal opens - use bill's due day in current month
   React.useEffect(() => {
     if (open && bill) {
-      // Use the bill's due day in August (current month)
-      const augustDate = new Date(2024, 7, bill.dueDay); // Month is 0-indexed (7 = August)
-      setPaymentDate(augustDate.toISOString().split('T')[0]);
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      // Use the bill's due day in the current month
+      const paymentDateObj = new Date(currentYear, currentMonth, bill.dueDay);
+      
+      // If the due day hasn't occurred yet this month, use it
+      // Otherwise, default to today
+      if (paymentDateObj <= now) {
+        setPaymentDate(paymentDateObj.toISOString().split('T')[0]);
+      } else {
+        setPaymentDate(now.toISOString().split('T')[0]);
+      }
     }
   }, [open, bill]);
 
