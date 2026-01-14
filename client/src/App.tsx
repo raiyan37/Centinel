@@ -68,29 +68,6 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
-      // Don't retry on server errors (5xx) - retrying won't help
-      // Retry only on network/timeout errors, up to 2 times
-      retry: (failureCount, error) => {
-        // Don't retry more than 2 times
-        if (failureCount >= 2) return false;
-        
-        // Check if it's an Axios error with a response (server error)
-        if (
-          error &&
-          typeof error === 'object' &&
-          'isAxiosError' in error &&
-          (error as { response?: { status?: number } }).response?.status
-        ) {
-          const status = (error as { response: { status: number } }).response.status;
-          // Don't retry on 4xx or 5xx errors
-          if (status >= 400) return false;
-        }
-        
-        // Retry on network errors (no response)
-        return true;
-      },
-      // Faster initial retry for network issues
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     },
   },
 });
