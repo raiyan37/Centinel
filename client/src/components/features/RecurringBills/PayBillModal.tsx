@@ -41,36 +41,50 @@ interface PayBillModalProps {
 
 export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
   const createTransaction = useCreateTransaction();
-  // Default to today's date when paying bills
-  const [paymentDate, setPaymentDate] = React.useState(
-    new Date().toISOString().split('T')[0]
-  );
+  // Default to today's date when paying bills (UTC format YYYY-MM-DD)
+  const [paymentDate, setPaymentDate] = React.useState(() => {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+  });
   const [isPaying, setIsPaying] = React.useState(false);
+  
+  // Use a ref to prevent double-clicks (synchronous check)
+  const isPayingRef = React.useRef(false);
 
   // Reset date when modal opens - use bill's due day in current month
   React.useEffect(() => {
     if (open && bill) {
+      // Reset the paying ref when modal opens
+      isPayingRef.current = false;
+      setIsPaying(false);
+      
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth();
+      const currentDay = now.getUTCDate();
       
       // Use the bill's due day in the current month
-      const paymentDateObj = new Date(currentYear, currentMonth, bill.dueDay);
-      
-      // If the due day hasn't occurred yet this month, use it
-      // Otherwise, default to today
-      if (paymentDateObj <= now) {
-        setPaymentDate(paymentDateObj.toISOString().split('T')[0]);
-      } else {
-        setPaymentDate(now.toISOString().split('T')[0]);
+      // If the due day has passed, use that day; otherwise use today
+      let paymentDay = bill.dueDay;
+      if (paymentDay > currentDay) {
+        // Due day hasn't occurred yet, use today's date
+        paymentDay = currentDay;
       }
+      
+      // Format as YYYY-MM-DD (UTC)
+      const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+      setPaymentDate(formattedDate);
     }
   }, [open, bill]);
 
   const handlePay = async () => {
-    if (!bill) return;
-
+    // Synchronous double-click prevention using ref
+    if (!bill || isPayingRef.current) return;
+    
+    // Set ref immediately (synchronous) to prevent double-clicks
+    isPayingRef.current = true;
     setIsPaying(true);
+    
     try {
       await createTransaction.mutateAsync({
         name: bill.name,
@@ -83,6 +97,8 @@ export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to record payment:', error);
+      // Reset ref on error so user can try again
+      isPayingRef.current = false;
     } finally {
       setIsPaying(false);
     }

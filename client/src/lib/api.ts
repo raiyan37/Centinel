@@ -566,7 +566,7 @@ export interface RecurringBillsResponse {
  * Get recurring bills with summary stats
  * 
  * CONCEPT: Fetches all recurring transactions and processes them client-side
- * to calculate paid/upcoming/due-soon status based on August 2024 context.
+ * to calculate paid/upcoming/due-soon status based on current month.
  */
 export async function getRecurringBills(params?: RecurringBillsParams): Promise<RecurringBillsResponse> {
   // Fetch all transactions (recurring ones will be filtered)
@@ -588,9 +588,23 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
   const CURRENT_MONTH = now.getMonth();
   const CURRENT_YEAR = now.getFullYear();
   
-  // Get first and last day of current month
-  const CURRENT_MONTH_START = new Date(CURRENT_YEAR, CURRENT_MONTH, 1);
-  const CURRENT_MONTH_END = new Date(CURRENT_YEAR, CURRENT_MONTH + 1, 0, 23, 59, 59, 999);
+  // Helper function to get year and month from a date string (handles timezone consistently)
+  // This extracts the date parts from ISO strings to avoid timezone issues
+  const getYearMonthDay = (dateString: string): { year: number; month: number; day: number } => {
+    // Parse the ISO date string to extract year, month, day in UTC
+    const date = new Date(dateString);
+    return {
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth(),
+      day: date.getUTCDate(),
+    };
+  };
+  
+  // Check if a transaction date is in the current month (using UTC comparison)
+  const isInCurrentMonth = (dateString: string): boolean => {
+    const { year, month } = getYearMonthDay(dateString);
+    return year === CURRENT_YEAR && month === CURRENT_MONTH;
+  };
 
   // Group all transactions by vendor name
   const transactionsByVendor = new Map<string, Transaction[]>();
@@ -603,7 +617,7 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
   // For each vendor, find the bill template (oldest) and check for payments (current month)
   const bills: RecurringBill[] = [];
   
-  transactionsByVendor.forEach((transactions, vendorName) => {
+  transactionsByVendor.forEach((transactions) => {
     // Sort by date ascending to find the oldest (bill template)
     const sorted = [...transactions].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -611,13 +625,10 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
     
     // The bill template is the OLDEST transaction (first created)
     const billTemplate = sorted[0];
-    const dueDay = new Date(billTemplate.date).getDate();
+    const dueDay = getYearMonthDay(billTemplate.date).day;
     
     // Check if ANY transaction for this vendor is in the current month (paid)
-    const hasPaidThisMonth = transactions.some((tx) => {
-      const txDate = new Date(tx.date);
-      return txDate >= CURRENT_MONTH_START && txDate <= CURRENT_MONTH_END;
-    });
+    const hasPaidThisMonth = transactions.some((tx) => isInCurrentMonth(tx.date));
 
     let status: 'paid' | 'upcoming' | 'due-soon';
 

@@ -17,16 +17,19 @@ import { catchErrors } from '../utils/catchErrors.js';
 import { HTTP_STATUS } from '../constants/http.js';
 
 /**
- * Get current month date range
+ * Get current month date range in UTC
  * Returns start and end of current month dynamically
+ * Uses UTC to ensure consistent date handling across timezones
  */
 function getCurrentMonthRange() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
   
-  const start = new Date(year, month, 1, 0, 0, 0, 0);
-  const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  // Start of month: 1st day at midnight UTC
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+  // End of month: last day at 23:59:59.999 UTC
+  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
   
   return { start, end };
 }
@@ -38,9 +41,9 @@ function getCurrentMonthRange() {
 export const getOverview = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
   
-  // Get current month range for all calculations
+  // Get current month range for all calculations (using UTC)
   const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
-  const currentDate = new Date().getDate();
+  const currentDate = new Date().getUTCDate();
   
   // Get user for balance
   const user = await User.findById(userId).lean();
@@ -116,9 +119,9 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
     return !(billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END);
   });
   
-  // Due soon = within 5 days from today
+  // Due soon = within 5 days from today (using UTC for consistency)
   const dueSoonBills = unpaidBills.filter((bill) => {
-    const dayOfMonth = new Date(bill.date).getDate();
+    const dayOfMonth = new Date(bill.date).getUTCDate();
     return dayOfMonth > currentDate && dayOfMonth <= currentDate + 5;
   });
   
