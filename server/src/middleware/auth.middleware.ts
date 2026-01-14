@@ -80,6 +80,11 @@ export const authenticate = (
     // Verify token
     const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
 
+    // Validate userId before creating ObjectId to prevent BSONError
+    if (!decoded.userId || typeof decoded.userId !== 'string') {
+      throw new AppError('Invalid token payload. Please log in again.', 401);
+    }
+
     // Attach userId to request
     req.userId = new mongoose.Types.ObjectId(decoded.userId);
 
@@ -105,6 +110,29 @@ export const authenticate = (
 
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        code: 'UNAUTHORIZED',
+      });
+      return;
+    }
+
+    // Handle BSONError (invalid ObjectId format in token)
+    if ((error as Error)?.name === 'BSONError') {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid token. Please log in again.',
+        code: 'INVALID_TOKEN',
+      });
+      return;
+    }
+
+    // Fallback: Check by error message in case instanceof fails due to bundling
+    if (error instanceof Error && 
+        (error.message.includes('Not authenticated') || 
+         error.message.includes('Invalid token') ||
+         error.message.includes('Please log in'))) {
+      res.status(401).json({
         success: false,
         message: error.message,
         code: 'UNAUTHORIZED',
