@@ -25,7 +25,6 @@ export interface ITransaction extends Document {
   date: Date;
   amount: number;  // Positive = income, Negative = expense
   recurring: boolean;
-  isTemplate: boolean; // If true, this is a bill template that doesn't affect balance
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,11 +70,6 @@ const transactionSchema = new Schema<ITransaction>(
     },
     // Whether this is a recurring transaction
     recurring: {
-      type: Boolean,
-      default: false,
-    },
-    // Whether this is a bill template (doesn't affect balance until paid)
-    isTemplate: {
       type: Boolean,
       default: false,
     },

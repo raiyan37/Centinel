@@ -2,8 +2,8 @@
  * Add Bill Form Component
  *
  * CONCEPT: A modal dialog to add a new recurring bill.
- * Creates a recurring transaction that will appear in both
- * the Recurring Bills page and Transactions page.
+ * Creates a bill record only - NO transaction is created.
+ * Transactions are only created when the bill is PAID.
  *
  * Form Fields:
  * - Vendor/Company name
@@ -22,7 +22,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateTransaction } from '@/queryHooks';
+import { useCreateRecurringBill } from '@/queryHooks';
 import {
   Dialog,
   DialogContent,
@@ -67,7 +67,7 @@ interface AddBillFormProps {
 }
 
 export function AddBillForm({ open, onOpenChange }: AddBillFormProps) {
-  const createTransaction = useCreateTransaction();
+  const createBill = useCreateRecurringBill();
 
   const {
     register,
@@ -102,24 +102,13 @@ export function AddBillForm({ open, onOpenChange }: AddBillFormProps) {
 
   const onSubmit = async (data: AddBillFormData) => {
     try {
-      // Create bill template in PREVIOUS month so it shows as "unpaid"
-      // The bill will show as upcoming/due-soon until user pays it
-      // When paid, a new transaction in current month will be created
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth(); // 0-indexed
-      
-      // Set date to previous month with the specified due day
-      const date = new Date(currentYear, currentMonth - 1, data.dueDay);
-
-      await createTransaction.mutateAsync({
+      // Create bill record only - NO transaction created
+      // Balance is NOT affected until bill is paid
+      await createBill.mutateAsync({
         name: data.name,
-        amount: -Math.abs(data.amount), // Bills are expenses (negative)
+        amount: data.amount, // Will be converted to negative on server
         category: data.category,
-        date: date.toISOString(),
-        recurring: true, // This makes it appear in Recurring Bills
-        avatar: './assets/images/avatars/default.jpg',
-        isTemplate: true, // Template bills don't affect balance until paid
+        dueDay: data.dueDay,
       });
       onOpenChange(false);
       reset();

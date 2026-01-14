@@ -2,12 +2,13 @@
  * Pay Bill Modal Component
  *
  * CONCEPT: A confirmation modal to mark a bill as paid.
- * Creates a new transaction for the current payment.
+ * THIS is when a transaction is created and balance is affected.
  *
  * When a bill is paid:
  * 1. A new transaction is created with the bill amount
  * 2. The transaction appears in the Transactions page
  * 3. The bill status updates to "paid" in Recurring Bills
+ * 4. Balance is deducted
  *
  * Usage:
  *   <PayBillModal
@@ -18,7 +19,7 @@
  */
 
 import * as React from 'react';
-import { useCreateTransaction } from '@/queryHooks';
+import { usePayRecurringBill } from '@/queryHooks';
 import { formatCurrency } from '@/lib/utils';
 import type { RecurringBill } from '@/lib/api';
 import {
@@ -40,7 +41,7 @@ interface PayBillModalProps {
 }
 
 export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
-  const createTransaction = useCreateTransaction();
+  const payBill = usePayRecurringBill();
   // Default to today's date when paying bills (UTC format YYYY-MM-DD)
   const [paymentDate, setPaymentDate] = React.useState(() => {
     const now = new Date();
@@ -86,14 +87,10 @@ export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
     setIsPaying(true);
     
     try {
-      await createTransaction.mutateAsync({
-        name: bill.name,
-        amount: bill.amount, // Already negative
-        category: bill.category,
-        date: paymentDate,
-        recurring: true,
-        avatar: bill.avatar,
-        isTemplate: false, // Actual payment - affects balance
+      // Pay the bill - this creates a transaction and deducts from balance
+      await payBill.mutateAsync({
+        id: bill._id,
+        paymentDate,
       });
       onOpenChange(false);
     } catch (error) {

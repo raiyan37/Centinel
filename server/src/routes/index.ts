@@ -19,6 +19,7 @@ import transactionRoutes from './transaction.routes.js';
 import budgetRoutes from './budget.routes.js';
 import potRoutes from './pot.routes.js';
 import overviewRoutes from './overview.routes.js';
+import recurringBillRoutes from './recurringBill.routes.js';
 
 // Import auth middleware
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -82,5 +83,15 @@ router.use('/pots', authenticate, potRoutes);
  * GET    /api/overview/balance - Get current balance
  */
 router.use('/overview', authenticate, overviewRoutes);
+
+/**
+ * Recurring Bill Routes
+ * GET    /api/recurring-bills          - List all recurring bills
+ * POST   /api/recurring-bills          - Create recurring bill
+ * PUT    /api/recurring-bills/:id      - Update recurring bill
+ * DELETE /api/recurring-bills/:id      - Delete recurring bill
+ * POST   /api/recurring-bills/:id/pay  - Pay bill (creates transaction)
+ */
+router.use('/recurring-bills', authenticate, recurringBillRoutes);
 
 export default router;
