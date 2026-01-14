@@ -220,6 +220,9 @@ export declare function validateBody<T extends ZodSchema>(schema: T): (req: Requ
  * SECURITY:
  * - Validates and sanitizes query parameters
  * - Prevents ReDoS via regex escaping for search
+ *
+ * NOTE: In newer Express/Node versions, req.query is read-only.
+ * We store validated data in req.validatedQuery instead.
  */
 export declare function validateQuery<T extends ZodSchema>(schema: T): (req: Request, res: Response, next: NextFunction) => void;
 /**

@@ -20,7 +20,7 @@
  * - Write operations: 30 requests per 15 minutes (creation/update/delete)
  * - Read operations: 200 requests per 15 minutes (lenient for reads)
  */
-import { rateLimit } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import { HTTP_STATUS } from '../constants/http.js';
 // =============================================================================
 // RATE LIMIT RESPONSE HANDLER
@@ -55,20 +55,15 @@ function skipHandler(req) {
 // =============================================================================
 /**
  * Base configuration shared by all rate limiters
+ *
+ * NOTE: validate is set to false to prevent ERR_ERL_KEY_GEN_IPV6 errors.
+ * IP handling is done via trust proxy setting in app.ts
  */
 const baseConfig = {
     standardHeaders: true, // Return rate limit info in headers (RateLimit-*)
     legacyHeaders: false, // Disable X-RateLimit-* headers (deprecated)
     skip: skipHandler,
-    // Use IP address as identifier
-    keyGenerator: (req) => {
-        // Use X-Forwarded-For in production (behind proxy/load balancer)
-        const forwarded = req.headers['x-forwarded-for'];
-        if (typeof forwarded === 'string') {
-            return forwarded.split(',')[0].trim();
-        }
-        return req.ip || req.socket.remoteAddress || 'unknown';
-    },
+    validate: false, // Disable all validation (we handle IPv6 via trust proxy)
 };
 // =============================================================================
 // AUTH RATE LIMITER (STRICT)

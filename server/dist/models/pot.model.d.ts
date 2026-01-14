@@ -23,12 +23,10 @@ export interface IPot extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Pot: mongoose.Model<IPot, {}, {}, {}, mongoose.Document<unknown, {}, IPot, {}, mongoose.DefaultSchemaOptions> & IPot & Required<{
+export declare const Pot: mongoose.Model<IPot, {}, {}, {}, mongoose.Document<unknown, {}, IPot, {}, {}> & IPot & Required<{
     _id: Types.ObjectId;
 }> & {
     __v: number;
-} & {
-    id: string;
-}, any, IPot>;
+}, any>;
 export default Pot;
 //# sourceMappingURL=pot.model.d.ts.map

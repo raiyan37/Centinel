@@ -42,9 +42,12 @@ const SORT_OPTIONS = {
  * - category is whitelisted
  */
 export const getTransactions = catchErrors(async (req, res) => {
+    // #region agent log
+    console.log(`[TRANSACTIONS DEBUG] getTransactions called, userId: ${req.userId}, query:`, req.query);
+    // #endregion
     const userId = req.userId;
-    // Query params are pre-validated by middleware
-    const query = req.query;
+    // Query params are pre-validated by middleware and stored in validatedQuery
+    const query = req.validatedQuery;
     const { page, limit, search, sort, filter, category } = query;
     // Build query filter
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

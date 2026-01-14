@@ -323,12 +323,16 @@ export function validateBody(schema) {
  * SECURITY:
  * - Validates and sanitizes query parameters
  * - Prevents ReDoS via regex escaping for search
+ *
+ * NOTE: In newer Express/Node versions, req.query is read-only.
+ * We store validated data in req.validatedQuery instead.
  */
 export function validateQuery(schema) {
     return (req, res, next) => {
         try {
             const validated = schema.parse(req.query);
-            req.query = validated;
+            // Store validated query in a custom property (req.query is read-only in newer Express)
+            req.validatedQuery = validated;
             next();
         }
         catch (error) {

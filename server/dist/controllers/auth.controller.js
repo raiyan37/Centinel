@@ -39,21 +39,30 @@ function generateToken(userId) {
  * - Cannot be accessed by JavaScript (prevents XSS attacks)
  * - Automatically sent with requests
  * - Can be set to SameSite for CSRF protection
+ *
+ * CROSS-ORIGIN NOTE:
+ * When frontend and backend are on different domains (e.g., Vercel + Railway),
+ * we must use sameSite: 'none' with secure: true for cookies to be sent.
+ * This is required for cross-origin authentication with cookies.
  */
 function setAuthCookie(res, token) {
     res.cookie('token', token, {
         httpOnly: true, // Cannot be accessed by JavaScript
         secure: env.isProduction, // HTTPS only in production
-        sameSite: env.isProduction ? 'strict' : 'lax', // CSRF protection
+        sameSite: env.isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 }
 /**
  * Clear auth cookie
+ *
+ * NOTE: Cookie attributes must match setAuthCookie for proper clearing
  */
 function clearAuthCookie(res) {
     res.cookie('token', '', {
         httpOnly: true,
+        secure: env.isProduction,
+        sameSite: env.isProduction ? 'none' : 'lax',
         expires: new Date(0),
     });
 }
@@ -127,11 +136,12 @@ export const register = catchErrors(async (req, res) => {
     // Generate token and set cookie
     const token = generateToken(user._id.toString());
     setAuthCookie(res, token);
-    // Return user data (without password)
+    // Return user data (without password) and token for client storage
     res.status(201).json({
         success: true,
         data: {
             user: user.omitPassword(),
+            token, // Include token for Authorization header auth (proxy setups)
         },
     });
 });
@@ -173,11 +183,12 @@ export const login = catchErrors(async (req, res) => {
     // Generate token and set cookie
     const token = generateToken(user._id.toString());
     setAuthCookie(res, token);
-    // Return user data
+    // Return user data and token for client storage
     res.json({
         success: true,
         data: {
             user: user.omitPassword(),
+            token, // Include token for Authorization header auth (proxy setups)
         },
     });
 });
@@ -246,11 +257,12 @@ export const googleAuth = catchErrors(async (req, res) => {
     // Generate token and set cookie
     const token = generateToken(user._id.toString());
     setAuthCookie(res, token);
-    // Return user data
+    // Return user data and token for client storage
     res.json({
         success: true,
         data: {
             user: user.omitPassword(),
+            token, // Include token for Authorization header auth (proxy setups)
         },
     });
 });

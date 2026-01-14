@@ -25,12 +25,10 @@ export interface ITransaction extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Transaction: mongoose.Model<ITransaction, {}, {}, {}, mongoose.Document<unknown, {}, ITransaction, {}, mongoose.DefaultSchemaOptions> & ITransaction & Required<{
+export declare const Transaction: mongoose.Model<ITransaction, {}, {}, {}, mongoose.Document<unknown, {}, ITransaction, {}, {}> & ITransaction & Required<{
     _id: Types.ObjectId;
 }> & {
     __v: number;
-} & {
-    id: string;
-}, any, ITransaction>;
+}, any>;
 export default Transaction;
 //# sourceMappingURL=transaction.model.d.ts.map

@@ -29,12 +29,10 @@ export interface IUser extends Document {
     comparePassword(candidatePassword: string): Promise<boolean>;
     omitPassword(): Partial<IUser>;
 }
-export declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, mongoose.DefaultSchemaOptions> & IUser & Required<{
+export declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, {}> & IUser & Required<{
     _id: Types.ObjectId;
 }> & {
     __v: number;
-} & {
-    id: string;
-}, any, IUser>;
+}, any>;
 export default User;
 //# sourceMappingURL=user.model.d.ts.map

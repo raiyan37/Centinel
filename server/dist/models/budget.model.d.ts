@@ -22,12 +22,10 @@ export interface IBudget extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Budget: mongoose.Model<IBudget, {}, {}, {}, mongoose.Document<unknown, {}, IBudget, {}, mongoose.DefaultSchemaOptions> & IBudget & Required<{
+export declare const Budget: mongoose.Model<IBudget, {}, {}, {}, mongoose.Document<unknown, {}, IBudget, {}, {}> & IBudget & Required<{
     _id: Types.ObjectId;
 }> & {
     __v: number;
-} & {
-    id: string;
-}, any, IBudget>;
+}, any>;
 export default Budget;
 //# sourceMappingURL=budget.model.d.ts.map
