@@ -48,6 +48,9 @@ const SORT_OPTIONS: Record<string, Record<string, 1 | -1>> = {
  * - category is whitelisted
  */
 export const getTransactions = catchErrors(async (req: Request, res: Response) => {
+  // #region agent log
+  console.log(`[TRANSACTIONS DEBUG] getTransactions called, userId: ${req.userId}, query:`, req.query);
+  // #endregion
   const userId = req.userId;
 
   // Query params are pre-validated by middleware

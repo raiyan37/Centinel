@@ -69,9 +69,16 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ): void => {
+  // #region agent log
+  console.log(`[AUTH DEBUG] ${req.method} ${req.path} - Starting auth`);
+  // #endregion
   try {
     // Get token from header or cookie
     const token = getTokenFromRequest(req);
+
+    // #region agent log
+    console.log(`[AUTH DEBUG] Token: ${token ? 'present' : 'missing'}, AuthHeader: ${!!req.headers.authorization}, Cookie: ${!!req.cookies?.token}`);
+    // #endregion
 
     if (!token) {
       throw new AppError('Not authenticated. Please log in.', 401);
@@ -79,6 +86,10 @@ export const authenticate = (
 
     // Verify token
     const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
+
+    // #region agent log
+    console.log(`[AUTH DEBUG] Decoded token:`, { userId: decoded.userId, type: typeof decoded.userId });
+    // #endregion
 
     // Validate userId before creating ObjectId to prevent BSONError
     if (!decoded.userId || typeof decoded.userId !== 'string') {
@@ -88,9 +99,25 @@ export const authenticate = (
     // Attach userId to request
     req.userId = new mongoose.Types.ObjectId(decoded.userId);
 
+    // #region agent log
+    console.log(`[AUTH DEBUG] Auth successful for userId: ${req.userId}`);
+    // #endregion
+
     next();
   } catch (error) {
+    // #region agent log
+    console.error(`[AUTH DEBUG] Error:`, {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+      constructor: (error as Error)?.constructor?.name,
+      stack: (error as Error)?.stack?.split('\n')[0],
+    });
+    // #endregion
+
     if (error instanceof jwt.JsonWebTokenError) {
+      // #region agent log
+      console.log(`[AUTH DEBUG] Caught as JsonWebTokenError`);
+      // #endregion
       res.status(401).json({
         success: false,
         message: 'Invalid token. Please log in again.',
@@ -100,6 +127,9 @@ export const authenticate = (
     }
 
     if (error instanceof jwt.TokenExpiredError) {
+      // #region agent log
+      console.log(`[AUTH DEBUG] Caught as TokenExpiredError`);
+      // #endregion
       res.status(401).json({
         success: false,
         message: 'Token expired. Please log in again.',
@@ -109,6 +139,9 @@ export const authenticate = (
     }
 
     if (error instanceof AppError) {
+      // #region agent log
+      console.log(`[AUTH DEBUG] Caught as AppError, statusCode: ${error.statusCode}`);
+      // #endregion
       res.status(error.statusCode).json({
         success: false,
         message: error.message,
@@ -119,6 +152,9 @@ export const authenticate = (
 
     // Handle BSONError (invalid ObjectId format in token)
     if ((error as Error)?.name === 'BSONError') {
+      // #region agent log
+      console.log(`[AUTH DEBUG] Caught as BSONError`);
+      // #endregion
       res.status(401).json({
         success: false,
         message: 'Invalid token. Please log in again.',
@@ -132,6 +168,9 @@ export const authenticate = (
         (error.message.includes('Not authenticated') || 
          error.message.includes('Invalid token') ||
          error.message.includes('Please log in'))) {
+      // #region agent log
+      console.log(`[AUTH DEBUG] Caught by message fallback`);
+      // #endregion
       res.status(401).json({
         success: false,
         message: error.message,
@@ -140,7 +179,10 @@ export const authenticate = (
       return;
     }
 
-    // Unknown error
+    // Unknown error - log detailed info
+    // #region agent log
+    console.error(`[AUTH DEBUG] UNKNOWN ERROR - Returning 500:`, error);
+    // #endregion
     res.status(500).json({
       success: false,
       message: 'Authentication error',

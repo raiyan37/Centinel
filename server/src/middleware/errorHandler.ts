@@ -29,6 +29,18 @@ interface ErrorResponse {
 }
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  // #region agent log
+  console.error('[ERROR_HANDLER DEBUG] Error received:', {
+    name: err?.name,
+    message: err?.message,
+    code: err?.code,
+    statusCode: err?.statusCode,
+    constructor: err?.constructor?.name,
+    isAppError: err instanceof AppError,
+    isZodError: err instanceof ZodError,
+  });
+  // #endregion
+
   // SECURITY: Log full error for debugging, but don't expose to client
   if (env.isDevelopment) {
     console.error('❌ Error:', err);
