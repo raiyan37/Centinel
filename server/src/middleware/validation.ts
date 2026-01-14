@@ -364,7 +364,13 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const validated = schema.parse(req.query);
-      req.query = validated as typeof req.query;
+      // Clear existing query params and copy validated ones
+      // (req.query object itself is read-only, but its properties can be modified)
+      for (const key of Object.keys(req.query)) {
+        delete req.query[key];
+      }
+      Object.assign(req.query, validated);
+
       next();
     } catch (error) {
       if (error instanceof ZodError) {
