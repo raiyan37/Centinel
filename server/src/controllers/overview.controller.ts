@@ -16,9 +16,20 @@ import { User, Transaction, Budget, Pot } from '../models/index.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { HTTP_STATUS } from '../constants/http.js';
 
-// Current month for calculations
-const CURRENT_MONTH_START = new Date('2024-08-01T00:00:00.000Z');
-const CURRENT_MONTH_END = new Date('2024-08-31T23:59:59.999Z');
+/**
+ * Get current month date range
+ * Returns start and end of current month dynamically
+ */
+function getCurrentMonthRange() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  
+  const start = new Date(year, month, 1, 0, 0, 0, 0);
+  const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  
+  return { start, end };
+}
 
 // =============================================================================
 // GET OVERVIEW
@@ -26,6 +37,10 @@ const CURRENT_MONTH_END = new Date('2024-08-31T23:59:59.999Z');
 
 export const getOverview = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
+  
+  // Get current month range for all calculations
+  const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
+  const currentDate = new Date().getDate();
   
   // Get user for balance
   const user = await User.findById(userId).lean();
@@ -89,21 +104,25 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
     new Map(recurringBills.map((bill) => [bill.name, bill])).values()
   );
   
-  // Calculate bills summary for August 2024
+  // Calculate bills summary for current month
   const paidBills = uniqueBills.filter((bill) => {
     const billDate = new Date(bill.date);
     return billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END;
   });
   
-  // Due soon = within 5 days of Aug 19, 2024 (latest transaction)
-  // Bills due between Aug 20 and Aug 24 are "due soon"
-  const dueSoonBills = uniqueBills.filter((bill) => {
-    // Get day of month from any recurring transaction
-    const dayOfMonth = new Date(bill.date).getDate();
-    return dayOfMonth > 19 && dayOfMonth <= 24;
+  // Unpaid bills (not paid this month)
+  const unpaidBills = uniqueBills.filter((bill) => {
+    const billDate = new Date(bill.date);
+    return !(billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END);
   });
   
-  const totalBillsAmount = uniqueBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
+  // Due soon = within 5 days from today
+  const dueSoonBills = unpaidBills.filter((bill) => {
+    const dayOfMonth = new Date(bill.date).getDate();
+    return dayOfMonth > currentDate && dayOfMonth <= currentDate + 5;
+  });
+  
+  const totalBillsAmount = unpaidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
   const paidBillsAmount = paidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
   
   res.status(HTTP_STATUS.OK).json({
@@ -125,15 +144,16 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
         recent: recentTransactions,
       },
       recurringBills: {
-        total: uniqueBills.length,
+        // Total shows only UNPAID bills
+        total: unpaidBills.length,
         totalAmount: totalBillsAmount,
         paid: {
           count: paidBills.length,
           amount: paidBillsAmount,
         },
         upcoming: {
-          count: uniqueBills.length - paidBills.length,
-          amount: totalBillsAmount - paidBillsAmount,
+          count: unpaidBills.length,
+          amount: totalBillsAmount,
         },
         dueSoon: {
           count: dueSoonBills.length,

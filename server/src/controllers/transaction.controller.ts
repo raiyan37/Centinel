@@ -32,6 +32,21 @@ const SORT_OPTIONS: Record<string, Record<string, 1 | -1>> = {
   Lowest: { amount: 1 },
 };
 
+/**
+ * Get current month date range
+ * Returns start and end of current month dynamically
+ */
+function getCurrentMonthRange() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  
+  const start = new Date(year, month, 1, 0, 0, 0, 0);
+  const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  
+  return { start, end };
+}
+
 // =============================================================================
 // GET ALL TRANSACTIONS
 // =============================================================================
@@ -167,12 +182,10 @@ export const createTransaction = catchErrors(async (req: Request, res: Response)
     recurring: recurring || false,
   });
   
-  // Update user balance (only for transactions in August 2024 - current month)
-  // This ensures bill templates (created in July) don't affect balance
-  // But actual payments (in August) do affect balance
+  // Update user balance (only for transactions in current month)
+  // This ensures historical/future transactions don't immediately affect current balance
   const transactionDate = new Date(date);
-  const currentMonthStart = new Date('2024-08-01');
-  const currentMonthEnd = new Date('2024-08-31');
+  const { start: currentMonthStart, end: currentMonthEnd } = getCurrentMonthRange();
   
   if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
     const { User } = await import('../models/index.js');
@@ -224,8 +237,7 @@ export const updateTransaction = catchErrors(async (req: Request, res: Response)
   );
   
   // Update balance if amount or date changed and affects current month
-  const currentMonthStart = new Date('2024-08-01');
-  const currentMonthEnd = new Date('2024-08-31');
+  const { start: currentMonthStart, end: currentMonthEnd } = getCurrentMonthRange();
   
   const oldDate = oldTransaction.date;
   const newDate = transaction!.date;
@@ -284,8 +296,7 @@ export const deleteTransaction = catchErrors(async (req: Request, res: Response)
   
   // Update user balance (reverse the transaction if it was in current month)
   const transactionDate = transaction.date;
-  const currentMonthStart = new Date('2024-08-01');
-  const currentMonthEnd = new Date('2024-08-31');
+  const { start: currentMonthStart, end: currentMonthEnd } = getCurrentMonthRange();
   
   if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
     const { User } = await import('../models/index.js');

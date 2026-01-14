@@ -592,11 +592,16 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
 
   const uniqueBills = Array.from(billMap.values());
 
-  // Calculate status for each bill (based on August 2024)
-  // Current date context: August 19, 2024
-  const CURRENT_DATE = 19; // August 19
-  const CURRENT_MONTH_START = new Date('2024-08-01');
-  const CURRENT_MONTH_END = new Date('2024-08-31');
+  // Calculate status for each bill (based on current month)
+  // Use actual current date for dynamic monthly reset
+  const now = new Date();
+  const CURRENT_DATE = now.getDate();
+  const CURRENT_MONTH = now.getMonth();
+  const CURRENT_YEAR = now.getFullYear();
+  
+  // Get first and last day of current month
+  const CURRENT_MONTH_START = new Date(CURRENT_YEAR, CURRENT_MONTH, 1);
+  const CURRENT_MONTH_END = new Date(CURRENT_YEAR, CURRENT_MONTH + 1, 0, 23, 59, 59, 999);
 
   const bills: RecurringBill[] = uniqueBills.map((tx) => {
     const billDate = new Date(tx.date);
@@ -604,7 +609,7 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
 
     let status: 'paid' | 'upcoming' | 'due-soon';
 
-    // Check if paid this month (has a transaction in August)
+    // Check if paid this month (has a transaction in current month)
     const isPaidThisMonth = billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END;
 
     if (isPaidThisMonth) {
@@ -659,8 +664,9 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
   const dueSoonBills = bills.filter((b) => b.status === 'due-soon');
 
   const summary: RecurringBillsSummary = {
-    total: bills.length,
-    totalAmount: bills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
+    // Total shows only UNPAID bills (upcoming + due soon)
+    total: upcomingBills.length,
+    totalAmount: upcomingBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
     paid: {
       count: paidBills.length,
       amount: paidBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
