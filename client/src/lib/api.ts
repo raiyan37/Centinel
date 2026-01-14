@@ -581,17 +581,6 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
     (tx) => tx.recurring && tx.amount < 0
   );
 
-  // Deduplicate by vendor name (one bill per vendor)
-  const billMap = new Map<string, Transaction>();
-  recurringTransactions.forEach((tx) => {
-    // Keep the most recent transaction for each vendor
-    if (!billMap.has(tx.name) || new Date(tx.date) > new Date(billMap.get(tx.name)!.date)) {
-      billMap.set(tx.name, tx);
-    }
-  });
-
-  const uniqueBills = Array.from(billMap.values());
-
   // Calculate status for each bill (based on current month)
   // Use actual current date for dynamic monthly reset
   const now = new Date();
@@ -603,16 +592,36 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
   const CURRENT_MONTH_START = new Date(CURRENT_YEAR, CURRENT_MONTH, 1);
   const CURRENT_MONTH_END = new Date(CURRENT_YEAR, CURRENT_MONTH + 1, 0, 23, 59, 59, 999);
 
-  const bills: RecurringBill[] = uniqueBills.map((tx) => {
-    const billDate = new Date(tx.date);
-    const dueDay = billDate.getDate();
+  // Group all transactions by vendor name
+  const transactionsByVendor = new Map<string, Transaction[]>();
+  recurringTransactions.forEach((tx) => {
+    const existing = transactionsByVendor.get(tx.name) || [];
+    existing.push(tx);
+    transactionsByVendor.set(tx.name, existing);
+  });
+
+  // For each vendor, find the bill template (oldest) and check for payments (current month)
+  const bills: RecurringBill[] = [];
+  
+  transactionsByVendor.forEach((transactions, vendorName) => {
+    // Sort by date ascending to find the oldest (bill template)
+    const sorted = [...transactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    // The bill template is the OLDEST transaction (first created)
+    const billTemplate = sorted[0];
+    const dueDay = new Date(billTemplate.date).getDate();
+    
+    // Check if ANY transaction for this vendor is in the current month (paid)
+    const hasPaidThisMonth = transactions.some((tx) => {
+      const txDate = new Date(tx.date);
+      return txDate >= CURRENT_MONTH_START && txDate <= CURRENT_MONTH_END;
+    });
 
     let status: 'paid' | 'upcoming' | 'due-soon';
 
-    // Check if paid this month (has a transaction in current month)
-    const isPaidThisMonth = billDate >= CURRENT_MONTH_START && billDate <= CURRENT_MONTH_END;
-
-    if (isPaidThisMonth) {
+    if (hasPaidThisMonth) {
       status = 'paid';
     } else if (dueDay > CURRENT_DATE && dueDay <= CURRENT_DATE + 5) {
       // Due within next 5 days
@@ -621,11 +630,11 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
       status = 'upcoming';
     }
 
-    return {
-      ...tx,
+    bills.push({
+      ...billTemplate,
       status,
       dueDay,
-    };
+    });
   });
 
   // Apply search filter if provided
