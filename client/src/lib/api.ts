@@ -253,6 +253,7 @@ export interface Transaction {
   date: string;
   amount: number;
   recurring: boolean;
+  isTemplate?: boolean; // Bill templates don't affect balance until paid
   createdAt: string;
   updatedAt: string;
 }
@@ -536,19 +537,12 @@ export async function getBalance(): Promise<{ success: boolean; data: { currentB
 // =============================================================================
 
 /**
- * Recurring Bill type - a bill template (NOT a transaction)
+ * Recurring Bill type (derived from Transaction)
  */
-export interface RecurringBill {
-  _id: string;
-  userId: string;
-  name: string;
-  amount: number;
-  category: string;
-  dueDay: number;
-  avatar: string;
+export interface RecurringBill extends Transaction {
+  // Status is calculated client-side based on date
   status: 'paid' | 'upcoming' | 'due-soon';
-  createdAt: string;
-  updatedAt: string;
+  dueDay: number; // Day of month the bill is due
 }
 
 export interface RecurringBillsParams {
@@ -569,42 +563,107 @@ export interface RecurringBillsResponse {
   summary: RecurringBillsSummary;
 }
 
-export interface CreateRecurringBillData {
-  name: string;
-  amount: number;
-  category: string;
-  dueDay: number;
-  avatar?: string;
-}
-
 /**
  * Get recurring bills with summary stats
  * 
- * Fetches from the dedicated recurring-bills endpoint.
- * Bills are separate from transactions - no balance impact until paid.
+ * CONCEPT: Fetches all recurring transactions and processes them client-side
+ * to calculate paid/upcoming/due-soon status based on current month.
  */
 export async function getRecurringBills(params?: RecurringBillsParams): Promise<RecurringBillsResponse> {
-  const response = await apiClient.get<{
-    success: boolean;
-    data: { bills: RecurringBill[]; summary: RecurringBillsSummary };
-  }>('/recurring-bills');
+  // Fetch all transactions (recurring ones will be filtered)
+  const response = await apiClient.get<TransactionsResponse>('/transactions', {
+    params: { limit: 500 }, // Get all transactions
+  });
 
-  let bills = response.data.data.bills;
+  const allTransactions = response.data.data.transactions;
+
+  // Filter for recurring expense transactions only
+  const recurringTransactions = allTransactions.filter(
+    (tx) => tx.recurring && tx.amount < 0
+  );
+
+  // Calculate status for each bill (based on current month)
+  // Use actual current date for dynamic monthly reset
+  const now = new Date();
+  const CURRENT_DATE = now.getDate();
+  const CURRENT_MONTH = now.getMonth();
+  const CURRENT_YEAR = now.getFullYear();
+  
+  // Helper function to get year and month from a date string (handles timezone consistently)
+  // This extracts the date parts from ISO strings to avoid timezone issues
+  const getYearMonthDay = (dateString: string): { year: number; month: number; day: number } => {
+    // Parse the ISO date string to extract year, month, day in UTC
+    const date = new Date(dateString);
+    return {
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth(),
+      day: date.getUTCDate(),
+    };
+  };
+  
+  // Check if a transaction date is in the current month (using UTC comparison)
+  const isInCurrentMonth = (dateString: string): boolean => {
+    const { year, month } = getYearMonthDay(dateString);
+    return year === CURRENT_YEAR && month === CURRENT_MONTH;
+  };
+
+  // Group all transactions by vendor name
+  const transactionsByVendor = new Map<string, Transaction[]>();
+  recurringTransactions.forEach((tx) => {
+    const existing = transactionsByVendor.get(tx.name) || [];
+    existing.push(tx);
+    transactionsByVendor.set(tx.name, existing);
+  });
+
+  // For each vendor, find the bill template (oldest) and check for payments (current month)
+  const bills: RecurringBill[] = [];
+  
+  transactionsByVendor.forEach((transactions) => {
+    // Sort by date ascending to find the oldest (bill template)
+    const sorted = [...transactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    // The bill template is the OLDEST transaction (first created)
+    const billTemplate = sorted[0];
+    const dueDay = getYearMonthDay(billTemplate.date).day;
+    
+    // Check if ANY transaction for this vendor is in the current month (paid)
+    const hasPaidThisMonth = transactions.some((tx) => isInCurrentMonth(tx.date));
+
+    let status: 'paid' | 'upcoming' | 'due-soon';
+
+    if (hasPaidThisMonth) {
+      status = 'paid';
+    } else if (dueDay > CURRENT_DATE && dueDay <= CURRENT_DATE + 5) {
+      // Due within next 5 days
+      status = 'due-soon';
+    } else {
+      status = 'upcoming';
+    }
+
+    bills.push({
+      ...billTemplate,
+      status,
+      dueDay,
+    });
+  });
 
   // Apply search filter if provided
+  let filteredBills = bills;
   if (params?.search) {
     const searchLower = params.search.toLowerCase();
-    bills = bills.filter((bill) =>
+    filteredBills = bills.filter((bill) =>
       bill.name.toLowerCase().includes(searchLower)
     );
   }
 
   // Apply sort
   const sortOption = params?.sort || 'Latest';
-  bills.sort((a, b) => {
+  filteredBills.sort((a, b) => {
     switch (sortOption) {
       case 'Latest':
-        return a.dueDay - b.dueDay;
+        return a.dueDay - b.dueDay; // Earliest in month first
       case 'Oldest':
         return b.dueDay - a.dueDay;
       case 'A to Z':
@@ -620,42 +679,28 @@ export async function getRecurringBills(params?: RecurringBillsParams): Promise<
     }
   });
 
-  return { bills, summary: response.data.data.summary };
-}
+  // Calculate summary
+  const paidBills = bills.filter((b) => b.status === 'paid');
+  const upcomingBills = bills.filter((b) => b.status === 'upcoming' || b.status === 'due-soon');
+  const dueSoonBills = bills.filter((b) => b.status === 'due-soon');
 
-/**
- * Create a new recurring bill
- * 
- * This ONLY creates a bill record - NO transaction is created.
- * Balance is NOT affected until the bill is paid.
- */
-export async function createRecurringBill(data: CreateRecurringBillData): Promise<{ success: boolean; data: { bill: RecurringBill } }> {
-  const response = await apiClient.post('/recurring-bills', data);
-  return response.data;
-}
+  const summary: RecurringBillsSummary = {
+    // Total shows only UNPAID bills (upcoming + due soon)
+    total: upcomingBills.length,
+    totalAmount: upcomingBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
+    paid: {
+      count: paidBills.length,
+      amount: paidBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
+    },
+    upcoming: {
+      count: upcomingBills.length,
+      amount: upcomingBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
+    },
+    dueSoon: {
+      count: dueSoonBills.length,
+      amount: dueSoonBills.reduce((sum, b) => sum + Math.abs(b.amount), 0),
+    },
+  };
 
-/**
- * Update a recurring bill
- */
-export async function updateRecurringBill(id: string, data: Partial<CreateRecurringBillData>): Promise<{ success: boolean; data: { bill: RecurringBill } }> {
-  const response = await apiClient.put(`/recurring-bills/${id}`, data);
-  return response.data;
-}
-
-/**
- * Delete a recurring bill
- */
-export async function deleteRecurringBill(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await apiClient.delete(`/recurring-bills/${id}`);
-  return response.data;
-}
-
-/**
- * Pay a recurring bill
- * 
- * This creates a transaction and deducts from balance.
- */
-export async function payRecurringBill(id: string, paymentDate?: string): Promise<{ success: boolean; data: { transaction: Transaction } }> {
-  const response = await apiClient.post(`/recurring-bills/${id}/pay`, { paymentDate });
-  return response.data;
+  return { bills: filteredBills, summary };
 }
