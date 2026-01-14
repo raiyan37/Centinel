@@ -253,6 +253,7 @@ export interface Transaction {
   date: string;
   amount: number;
   recurring: boolean;
+  isTemplate?: boolean; // Bill templates don't affect balance until paid
   createdAt: string;
   updatedAt: string;
 }

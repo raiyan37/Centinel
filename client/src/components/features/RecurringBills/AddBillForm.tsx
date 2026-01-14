@@ -119,6 +119,7 @@ export function AddBillForm({ open, onOpenChange }: AddBillFormProps) {
         date: date.toISOString(),
         recurring: true, // This makes it appear in Recurring Bills
         avatar: './assets/images/avatars/default.jpg',
+        isTemplate: true, // Template bills don't affect balance until paid
       });
       onOpenChange(false);
       reset();

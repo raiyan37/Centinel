@@ -93,6 +93,7 @@ export function PayBillModal({ open, onOpenChange, bill }: PayBillModalProps) {
         date: paymentDate,
         recurring: true,
         avatar: bill.avatar,
+        isTemplate: false, // Actual payment - affects balance
       });
       onOpenChange(false);
     } catch (error) {

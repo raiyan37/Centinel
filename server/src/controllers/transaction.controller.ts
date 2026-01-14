@@ -172,7 +172,7 @@ export const getTransaction = catchErrors(async (req: Request, res: Response) =>
 export const createTransaction = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
   // Body is pre-validated by middleware - safe to use directly
-  const { name, amount, category, date, avatar, recurring } = req.body;
+  const { name, amount, category, date, avatar, recurring, isTemplate } = req.body;
 
   // Create transaction with validated data
   const transaction = await Transaction.create({
@@ -183,14 +183,16 @@ export const createTransaction = catchErrors(async (req: Request, res: Response)
     date: new Date(date),
     avatar: avatar || '/assets/images/avatars/default.jpg',
     recurring: recurring || false,
+    isTemplate: isTemplate || false, // Bill templates don't affect balance
   });
   
   // Update user balance (only for transactions in current month)
   // This ensures historical/future transactions don't immediately affect current balance
+  // IMPORTANT: Templates (bill definitions) do NOT affect balance - only actual payments do
   const transactionDate = new Date(date);
   const { start: currentMonthStart, end: currentMonthEnd } = getCurrentMonthRange();
   
-  if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
+  if (!isTemplate && transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
     const { User } = await import('../models/index.js');
     await User.findByIdAndUpdate(userId, {
       $inc: { balance: amount }, // Positive for income, negative for expenses

@@ -57,12 +57,14 @@ export const getBudgets = catchErrors(async (req: Request, res: Response) => {
   const enrichedBudgets = await Promise.all(
     budgets.map(async (budget) => {
       // Calculate spent (sum of expenses in category for current month)
+      // Exclude template transactions (bill templates that haven't been paid)
       const spentResult = await Transaction.aggregate([
         {
           $match: {
             userId,
             category: budget.category,
             amount: { $lt: 0 },  // Only expenses (negative amounts)
+            isTemplate: { $ne: true },  // Exclude templates
             date: {
               $gte: CURRENT_MONTH_START,
               $lte: CURRENT_MONTH_END,
@@ -81,10 +83,12 @@ export const getBudgets = catchErrors(async (req: Request, res: Response) => {
       const spent = spentResult.length > 0 ? Math.abs(spentResult[0].total) : 0;
       
       // Get latest 3 transactions for this category (regardless of month)
+      // Exclude templates
       const latestTransactions = await Transaction.find({
         userId,
         category: budget.category,
         amount: { $lt: 0 },  // Only expenses
+        isTemplate: { $ne: true },  // Exclude templates
       })
         .sort({ date: -1 })
         .limit(3)
@@ -123,12 +127,14 @@ export const getBudget = catchErrors(async (req: Request, res: Response) => {
   }
   
   // Calculate spent and get latest transactions (same as above)
+  // Exclude template transactions
   const spentResult = await Transaction.aggregate([
     {
       $match: {
         userId,
         category: budget.category,
         amount: { $lt: 0 },
+        isTemplate: { $ne: true },  // Exclude templates
         date: { $gte: CURRENT_MONTH_START, $lte: CURRENT_MONTH_END },
       },
     },
@@ -139,10 +145,12 @@ export const getBudget = catchErrors(async (req: Request, res: Response) => {
   
   const spent = spentResult.length > 0 ? Math.abs(spentResult[0].total) : 0;
   
+  // Exclude templates from latest transactions
   const latestTransactions = await Transaction.find({
     userId,
     category: budget.category,
     amount: { $lt: 0 },
+    isTemplate: { $ne: true },  // Exclude templates
   })
     .sort({ date: -1 })
     .limit(3)
