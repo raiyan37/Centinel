@@ -16,8 +16,8 @@
  *
  * Data Processing:
  * - Bills are deduplicated by vendor name
- * - Status calculated based on August 2024 context
- * - "Due Soon" = within 5 days of Aug 19, 2024
+ * - Status calculated dynamically based on current month
+ * - "Due Soon" = within 5 days from current date
  */
 
 import * as React from 'react';
