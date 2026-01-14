@@ -124,6 +124,7 @@ export declare const createTransactionSchema: z.ZodObject<{
     date: z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>;
     avatar: z.ZodDefault<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>>;
     recurring: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    isTemplate: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, z.core.$strict>;
 export declare const updateTransactionSchema: z.ZodObject<{
     name: z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
@@ -143,6 +144,7 @@ export declare const updateTransactionSchema: z.ZodObject<{
     date: z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
     avatar: z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
     recurring: z.ZodOptional<z.ZodBoolean>;
+    isTemplate: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const transactionQuerySchema: z.ZodObject<{
     page: z.ZodDefault<z.ZodOptional<z.ZodCoercedNumber<unknown>>>;

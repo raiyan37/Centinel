@@ -56,6 +56,11 @@ const transactionSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    // Whether this is a bill template (doesn't affect balance until paid)
+    isTemplate: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     // Automatically add createdAt and updatedAt fields
     timestamps: true,

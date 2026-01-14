@@ -22,6 +22,7 @@ export interface ITransaction extends Document {
     date: Date;
     amount: number;
     recurring: boolean;
+    isTemplate: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

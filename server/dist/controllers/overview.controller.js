@@ -37,15 +37,17 @@ export const getOverview = catchErrors(async (req, res) => {
     const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
     const currentDate = new Date().getUTCDate();
     // Calculate income and expenses from transactions
+    // IMPORTANT: Exclude template transactions (bill templates that haven't been paid)
     const [incomeResult, expenseResult] = await Promise.all([
         // Sum of positive amounts (income)
         Transaction.aggregate([
-            { $match: { userId, amount: { $gt: 0 } } },
+            { $match: { userId, amount: { $gt: 0 }, isTemplate: { $ne: true } } },
             { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
         // Sum of negative amounts (expenses) - we'll take absolute value
+        // Exclude templates - they don't affect balance until paid
         Transaction.aggregate([
-            { $match: { userId, amount: { $lt: 0 } } },
+            { $match: { userId, amount: { $lt: 0 }, isTemplate: { $ne: true } } },
             { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
     ]);
@@ -55,6 +57,7 @@ export const getOverview = catchErrors(async (req, res) => {
     const pots = await Pot.find({ userId }).lean();
     const totalSaved = pots.reduce((sum, pot) => sum + pot.total, 0);
     // Get budgets with spent amounts
+    // Exclude template transactions from budget spent calculation
     const budgets = await Budget.find({ userId }).lean();
     const budgetsWithSpent = await Promise.all(budgets.map(async (budget) => {
         const spentResult = await Transaction.aggregate([
@@ -64,6 +67,7 @@ export const getOverview = catchErrors(async (req, res) => {
                     category: budget.category,
                     amount: { $lt: 0 },
                     date: { $gte: CURRENT_MONTH_START, $lte: CURRENT_MONTH_END },
+                    isTemplate: { $ne: true },
                 },
             },
             { $group: { _id: null, total: { $sum: '$amount' } } },
@@ -72,7 +76,8 @@ export const getOverview = catchErrors(async (req, res) => {
         return { ...budget, spent };
     }));
     // Get recent transactions (latest 5)
-    const recentTransactions = await Transaction.find({ userId })
+    // Exclude template transactions (bill templates)
+    const recentTransactions = await Transaction.find({ userId, isTemplate: { $ne: true } })
         .sort({ date: -1 })
         .limit(5)
         .lean();
@@ -147,13 +152,14 @@ export const getOverview = catchErrors(async (req, res) => {
 export const getBalance = catchErrors(async (req, res) => {
     const userId = req.userId;
     // Calculate from transactions
+    // Exclude template transactions (bill templates that haven't been paid)
     const [incomeResult, expenseResult] = await Promise.all([
         Transaction.aggregate([
-            { $match: { userId, amount: { $gt: 0 } } },
+            { $match: { userId, amount: { $gt: 0 }, isTemplate: { $ne: true } } },
             { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
         Transaction.aggregate([
-            { $match: { userId, amount: { $lt: 0 } } },
+            { $match: { userId, amount: { $lt: 0 }, isTemplate: { $ne: true } } },
             { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
     ]);
