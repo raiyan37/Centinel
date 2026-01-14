@@ -212,7 +212,7 @@ export function TransactionsPage() {
         ) : (
           <>
             {/* Desktop Table Header */}
-            <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-4 md:pb-3 md:border-b md:border-[var(--color-grey-100)]">
+            <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:gap-4 md:pb-3 md:border-b md:border-[var(--color-grey-100)]">
               <span className="text-xs font-bold text-[var(--color-grey-500)]">
                 Recipient / Sender
               </span>
@@ -224,6 +224,9 @@ export function TransactionsPage() {
               </span>
               <span className="text-xs font-bold text-[var(--color-grey-500)] text-right">
                 Amount
+              </span>
+              <span className="text-xs font-bold text-[var(--color-grey-500)] w-8">
+                {/* Actions column */}
               </span>
             </div>
 

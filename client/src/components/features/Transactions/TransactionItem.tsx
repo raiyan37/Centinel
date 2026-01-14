@@ -9,15 +9,24 @@
  * - Color-coded amounts (green for income, default for expense)
  * - Category and date display
  * - Responsive design
+ * - Delete action via dropdown menu
  *
  * Usage:
  *   <TransactionItem transaction={tx} />
  */
 
 import * as React from 'react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import type { Transaction } from '@/lib/api';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui';
+import { Avatar, AvatarImage, AvatarFallback, Button } from '@/components/ui';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { useDeleteTransaction } from '@/queryHooks';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -41,9 +50,25 @@ function getInitials(name: string): string {
  */
 export function TransactionItemDesktop({ transaction }: TransactionItemProps) {
   const isIncome = transaction.amount >= 0;
+  const deleteTransaction = useDeleteTransaction();
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete this transaction from ${transaction.name}?`)) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await deleteTransaction.mutateAsync(transaction._id);
+    } catch (error) {
+      // Error is handled by the mutation hook
+      setIsDeleting(false);
+    }
+  };
 
   return (
-    <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr] md:items-center md:gap-4 md:py-4 md:border-b md:border-[var(--color-grey-100)] last:border-0">
+    <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:items-center md:gap-4 md:py-4 md:border-b md:border-[var(--color-grey-100)] last:border-0">
       {/* Name & Avatar */}
       <div className="flex items-center gap-4">
         <Avatar size="default">
@@ -75,6 +100,31 @@ export function TransactionItemDesktop({ transaction }: TransactionItemProps) {
         {isIncome ? '+' : ''}
         {formatCurrency(transaction.amount)}
       </span>
+
+      {/* Actions Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="h-8 w-8"
+            disabled={isDeleting}
+          >
+            <MoreVertical className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem 
+            onClick={handleDelete}
+            className="text-red-600 focus:text-red-600"
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {isDeleting ? 'Deleting...' : 'Delete Transaction'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -85,11 +135,27 @@ export function TransactionItemDesktop({ transaction }: TransactionItemProps) {
  */
 export function TransactionItemMobile({ transaction }: TransactionItemProps) {
   const isIncome = transaction.amount >= 0;
+  const deleteTransaction = useDeleteTransaction();
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete this transaction from ${transaction.name}?`)) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await deleteTransaction.mutateAsync(transaction._id);
+    } catch (error) {
+      // Error is handled by the mutation hook
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between py-4 border-b border-[var(--color-grey-100)] last:border-0 md:hidden">
       {/* Left: Avatar & Info */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <Avatar size="default">
           <AvatarImage src={transaction.avatar} alt={transaction.name} />
           <AvatarFallback>{getInitials(transaction.name)}</AvatarFallback>
@@ -119,6 +185,31 @@ export function TransactionItemMobile({ transaction }: TransactionItemProps) {
           {formatDate(transaction.date)}
         </p>
       </div>
+
+      {/* Actions Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="h-8 w-8 ml-2"
+            disabled={isDeleting}
+          >
+            <MoreVertical className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem 
+            onClick={handleDelete}
+            className="text-red-600 focus:text-red-600"
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {isDeleting ? 'Deleting...' : 'Delete Transaction'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
