@@ -4,7 +4,7 @@
  * SECURITY: Input validation handled by middleware.
  *
  * Key calculations:
- * - "spent": Sum of expenses in category for current month (August 2024)
+ * - "spent": Sum of expenses in category for current month (dynamic)
  * - "latest 3 transactions": Most recent transactions in category (any month)
  */
 
@@ -16,9 +16,22 @@ import { HTTP_STATUS } from '../constants/http.js';
 
 // Note: Input validation is handled by middleware/validation.ts
 
-// Current month for "spent" calculation (August 2024 per requirements)
-const CURRENT_MONTH_START = new Date('2024-08-01T00:00:00.000Z');
-const CURRENT_MONTH_END = new Date('2024-08-31T23:59:59.999Z');
+/**
+ * Get current month date range in UTC
+ * Returns start and end of current month dynamically
+ */
+function getCurrentMonthRange() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  
+  // Start of month: 1st day at midnight UTC
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+  // End of month: last day at 23:59:59.999 UTC
+  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+  
+  return { start, end };
+}
 
 // =============================================================================
 // GET ALL BUDGETS
@@ -28,11 +41,14 @@ const CURRENT_MONTH_END = new Date('2024-08-31T23:59:59.999Z');
  * Get Budgets with Spent Amount and Latest Transactions
  * 
  * For each budget, we calculate:
- * 1. spent: Total expenses in category for August 2024
+ * 1. spent: Total expenses in category for current month
  * 2. latestTransactions: 3 most recent transactions (any month)
  */
 export const getBudgets = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
+  
+  // Get current month range (dynamic)
+  const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
   
   // Get all budgets for user
   const budgets = await Budget.find({ userId }).lean();
@@ -96,6 +112,9 @@ export const getBudgets = catchErrors(async (req: Request, res: Response) => {
 export const getBudget = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
   const { id } = req.params;
+  
+  // Get current month range (dynamic)
+  const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
   
   const budget = await Budget.findOne({ _id: id, userId }).lean();
   

@@ -12,7 +12,7 @@
  */
 
 import { Request, Response } from 'express';
-import { User, Transaction, Budget, Pot } from '../models/index.js';
+import { Transaction, Budget, Pot } from '../models/index.js';
 import { catchErrors } from '../utils/catchErrors.js';
 import { HTTP_STATUS } from '../constants/http.js';
 
@@ -44,9 +44,6 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
   // Get current month range for all calculations (using UTC)
   const { start: CURRENT_MONTH_START, end: CURRENT_MONTH_END } = getCurrentMonthRange();
   const currentDate = new Date().getUTCDate();
-  
-  // Get user for balance
-  const user = await User.findById(userId).lean();
   
   // Calculate income and expenses from transactions
   const [incomeResult, expenseResult] = await Promise.all([
@@ -128,11 +125,14 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
   const totalBillsAmount = unpaidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
   const paidBillsAmount = paidBills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0);
   
+  // Calculate current balance dynamically (income - expenses)
+  const currentBalance = income - expenses;
+  
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: {
       balance: {
-        current: user?.balance || 0,
+        current: currentBalance,
         income,
         expenses,
       },
@@ -174,8 +174,6 @@ export const getOverview = catchErrors(async (req: Request, res: Response) => {
 export const getBalance = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId;
   
-  const user = await User.findById(userId).lean();
-  
   // Calculate from transactions
   const [incomeResult, expenseResult] = await Promise.all([
     Transaction.aggregate([
@@ -191,10 +189,13 @@ export const getBalance = catchErrors(async (req: Request, res: Response) => {
   const income = incomeResult.length > 0 ? incomeResult[0].total : 0;
   const expenses = expenseResult.length > 0 ? Math.abs(expenseResult[0].total) : 0;
   
+  // Calculate current balance dynamically (income - expenses)
+  const currentBalance = income - expenses;
+  
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: {
-      currentBalance: user?.balance || 0,
+      currentBalance,
       income,
       expenses,
     },
