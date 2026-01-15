@@ -2,7 +2,7 @@
 
 ![Centinel Demo](./centinel.gif)
 
-https://centinel-finance.vercel.app/
+Link: https://centinel-finance.vercel.app/
 
 Centinel is a modern, full-stack web application designed to simplify personal finance. It provides a centralized dashboard for tracking transactions, managing category-based budgets, monitoring savings goals (Pots), and keeping tabs on recurring bills.
 
@@ -149,10 +149,3 @@ npm run build
 Centinel is released under the MIT License. See the LICENSE file for more details..
 
 ---
-
-## 👨‍💻 Author
-
-Raiyanul Haque
-
-- Portfolio: [https://raiyanhaque.com  ](https://raiyanhaque.com/)
-- Contact: h.raiyanul@gmail.com
