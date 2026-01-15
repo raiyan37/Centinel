@@ -152,5 +152,5 @@ Centinel is released under the MIT License. See the LICENSE file for more detail
 
 Raiyanul Haque
 
-- Portfolio: [https://yourportfolio.com  ](https://raiyanhaque.com/)
+- Portfolio: [https://raiyanhaque.com  ](https://raiyanhaque.com/)
 - Contact: h.raiyanul@gmail.com
