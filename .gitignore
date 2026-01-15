@@ -4,6 +4,10 @@
 .env.local
 .env.*.local
 
+# Build outputs
+server/dist/
+client/.vite/
+
 # Avoid accidental upload of the Sketch and Figma design files
 #####################################################
 ## Please do not remove lines 5 and 6 - thanks! 🙂 ##
