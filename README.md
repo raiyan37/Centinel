@@ -1,6 +1,6 @@
 # Centinel | Personal Finance Management
 
-![Centinel Demo](./centinel.gif)
+<img src="./centinel.gif" width="100%" />
 
 Centinel is a modern, full-stack web application designed to simplify personal finance. It provides a centralized dashboard for tracking transactions, managing category-based budgets, monitoring savings goals (Pots), and keeping tabs on recurring bills.
 
