@@ -33,9 +33,7 @@ import { AppError } from '../utils/AppError.js';
  * Generate JWT token
  */
 function generateToken(userId: string): string {
-  return jwt.sign({ userId }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
-  });
+  return jwt.sign({ userId }, env.JWT_SECRET);
 }
 
 /**
