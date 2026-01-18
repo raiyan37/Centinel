@@ -10,7 +10,7 @@ Built with a focus on security and performance, Centinel utilizes **React 19**, 
 
 ---
 
-## 🚀 Features
+## Features
 
 - **Financial Dashboard** – High-level overview of total balance, monthly income, and expenses with interactive charts.
 - **Transaction Management** – Full CRUD capabilities with advanced filtering, sorting, and pagination.
@@ -22,7 +22,7 @@ Built with a focus on security and performance, Centinel utilizes **React 19**, 
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -48,7 +48,7 @@ Built with a focus on security and performance, Centinel utilizes **React 19**, 
 
 ---
 
-## 📥 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -78,7 +78,7 @@ npm install
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Create a `.env` file in both the `server` and `client` directories.
 
@@ -135,7 +135,7 @@ npm run build
 
 ---
 
-## 🛡️ Security Features
+## Security Features
 
 - **JWT Authentication** – Stateless, secure API authentication
 - **Bcrypt** – Industry-standard password hashing
@@ -144,7 +144,7 @@ npm run build
 
 ---
 
-## 📄 License
+## License
 
 Centinel is released under the MIT License. See the LICENSE file for more details..
 
