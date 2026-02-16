@@ -16,8 +16,13 @@
  *
  * Data Processing:
  * - Bills are deduplicated by vendor name
+<<<<<<< HEAD
  * - Status calculated based on August 2024 context
  * - "Due Soon" = within 5 days of Aug 19, 2024
+=======
+ * - Status calculated dynamically based on current month
+ * - "Due Soon" = within 5 days from current date
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
  */
 
 import * as React from 'react';
@@ -251,7 +256,11 @@ export function RecurringBillsPage() {
             <div className={isFetching ? 'opacity-50 transition-opacity' : ''}>
               {bills.map((bill) => (
                 <BillItem
+<<<<<<< HEAD
                   key={bill.id}
+=======
+                  key={bill._id}
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
                   bill={bill}
                   onPay={() => handlePayBill(bill)}
                 />

@@ -18,10 +18,16 @@
  *   const errorType = getErrorType(error);
  */
 
+<<<<<<< HEAD
+=======
+import { AxiosError } from 'axios';
+
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 // =============================================================================
 // ERROR TYPES
 // =============================================================================
 
+<<<<<<< HEAD
 /** Error shape compatible with Axios (for any HTTP client errors) */
 interface HttpErrorLike {
   isAxiosError?: boolean;
@@ -30,6 +36,8 @@ interface HttpErrorLike {
   message?: string;
 }
 
+=======
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 /**
  * Error type classification for different handling strategies
  */
@@ -61,14 +69,24 @@ export interface ErrorInfo {
 // =============================================================================
 
 /**
+<<<<<<< HEAD
  * Check if error is an Axios/HTTP client error
  */
 export function isAxiosError(error: unknown): error is HttpErrorLike {
+=======
+ * Check if error is an Axios error
+ */
+export function isAxiosError(error: unknown): error is AxiosError {
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
   return (
     error !== null &&
     typeof error === 'object' &&
     'isAxiosError' in error &&
+<<<<<<< HEAD
     (error as HttpErrorLike).isAxiosError === true
+=======
+    (error as AxiosError).isAxiosError === true
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
   );
 }
 
@@ -76,6 +94,7 @@ export function isAxiosError(error: unknown): error is HttpErrorLike {
  * Check if error is a network error (no response from server)
  */
 export function isNetworkError(error: unknown): boolean {
+<<<<<<< HEAD
   if (isAxiosError(error) && !error.response) {
     if (error.code === 'ERR_NETWORK') return true;
     if (error.code === 'ECONNABORTED') return true;
@@ -90,6 +109,19 @@ export function isNetworkError(error: unknown): boolean {
     if (error.message === 'Failed to fetch') return true;
     if (error.message?.includes('NetworkError')) return true;
     if (error.message?.includes('Load failed')) return true;
+=======
+  if (!isAxiosError(error)) return false;
+
+  // Network errors have no response
+  if (!error.response) {
+    // Check for specific network error codes
+    if (error.code === 'ERR_NETWORK') return true;
+    if (error.code === 'ECONNABORTED') return true; // Timeout
+    if (error.code === 'ECONNREFUSED') return true;
+    if (error.code === 'ENOTFOUND') return true;
+    if (error.message === 'Network Error') return true;
+    return true; // No response generally means network issue
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
   }
 
   return false;
@@ -100,7 +132,11 @@ export function isNetworkError(error: unknown): boolean {
  */
 export function isTimeoutError(error: unknown): boolean {
   if (!isAxiosError(error)) return false;
+<<<<<<< HEAD
   return error.code === 'ECONNABORTED' || (error.message?.includes('timeout') ?? false);
+=======
+  return error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 }
 
 /**
@@ -152,7 +188,11 @@ export function getErrorType(error: unknown): ErrorType {
   if (isNetworkError(error)) return 'network';
 
   if (isAxiosError(error) && error.response) {
+<<<<<<< HEAD
     const status = error.response.status ?? 0;
+=======
+    const status = error.response.status;
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 
     if (status === 400) return 'validation';
     if (status === 401) return 'unauthorized';
@@ -171,9 +211,15 @@ export function getErrorType(error: unknown): ErrorType {
 // =============================================================================
 
 /**
+<<<<<<< HEAD
  * Extract API error message from HTTP error response
  */
 function extractApiErrorMessage(error: HttpErrorLike): string | undefined {
+=======
+ * Extract API error message from Axios error response
+ */
+function extractApiErrorMessage(error: AxiosError): string | undefined {
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
   const data = error.response?.data as Record<string, unknown> | undefined;
 
   if (data) {

@@ -14,6 +14,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+<<<<<<< HEAD
+=======
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts';
 import { Button, Input, Label } from '@/components/ui';
@@ -40,6 +44,10 @@ export function LoginPage() {
   const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 
   // Get redirect path from location state
   const from = (location.state as { from?: string })?.from || '/';
@@ -71,6 +79,7 @@ export function LoginPage() {
   };
 
   /**
+<<<<<<< HEAD
    * Handle Google sign-in (redirects to Google OAuth)
    */
   const handleGoogleClick = () => {
@@ -79,6 +88,41 @@ export function LoginPage() {
   };
 
   const isLoading = isSubmitting;
+=======
+   * Handle Google sign-in success
+   */
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) {
+      setError('Google sign-in failed. Please try again.');
+      return;
+    }
+
+    setError(null);
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle(response.credential);
+      navigate(from, { replace: true });
+    } catch (err) {
+      // Use centralized error handling for better error messages
+      if (isNetworkError(err)) {
+        setError('Unable to connect to server. Please check your internet connection.');
+      } else {
+        setError(getErrorMessage(err));
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  /**
+   * Handle Google sign-in error
+   */
+  const handleGoogleError = () => {
+    setError('Google sign-in failed. Please try again.');
+  };
+
+  const isLoading = isSubmitting || isGoogleLoading;
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
 
   return (
     <div className="min-h-screen flex">
@@ -203,6 +247,7 @@ export function LoginPage() {
 
             {/* Google Sign-In */}
             <div className="flex justify-center">
+<<<<<<< HEAD
               <Button
                 type="button"
                 variant="outline"
@@ -212,6 +257,17 @@ export function LoginPage() {
               >
                 Continue with Google
               </Button>
+=======
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="outline"
+                size="large"
+                width="100%"
+                text="continue_with"
+              />
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
             </div>
 
             {/* Register link */}

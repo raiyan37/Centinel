@@ -179,7 +179,11 @@ export function PotsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {pots.map((pot) => (
           <PotCard
+<<<<<<< HEAD
             key={pot.id}
+=======
+            key={pot._id}
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
             pot={pot}
             onEdit={() => handleEdit(pot)}
             onDelete={() => handleDelete(pot)}

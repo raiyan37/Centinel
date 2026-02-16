@@ -233,7 +233,11 @@ export function TransactionsPage() {
             {/* Transaction List */}
             <div className={isFetching ? 'opacity-50 transition-opacity' : ''}>
               {transactions.map((tx) => (
+<<<<<<< HEAD
                 <TransactionItem key={tx.id} transaction={tx} />
+=======
+                <TransactionItem key={tx._id} transaction={tx} />
+>>>>>>> ae78191afa578c360889abac109c62c29a292dd3
               ))}
             </div>
 
