@@ -90,25 +90,26 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ---
 
-## 💻 Usage
+## Usage
 
 ### Development Mode
 
 Run the **Client**
-
+'''bash
 cd client
 npm run dev
-
+'''
 The app will run at:
-
+'''bash
 http://localhost:5173
-
+'''
 ### Production Build
 
 **Client**
-
+'''bash
 cd client
 npm run build
+'''
 
 Deploy the `dist` folder to Vercel, Netlify, or any static hosting service.
 
