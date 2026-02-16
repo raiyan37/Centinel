@@ -17,4 +17,14 @@
 
 # Environment variables with secrets
 .env
+.env.*
 *.env.local
+
+# Supabase local/temp files (contains project refs, connection strings)
+supabase/.temp/
+
+# Vite cache
+client/.vite/
+
+# Node modules
+node_modules/
