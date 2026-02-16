@@ -1,0 +1,7 @@
+-- Centinel seed data
+-- Run after migrations. Profiles are auto-created via handle_new_user trigger on signup.
+-- To seed test data: create a user via the app (Sign Up), then run inserts with that user's ID.
+-- Example (replace USER_UUID with actual auth.users.id from Supabase Dashboard):
+--
+-- INSERT INTO transactions (user_id, avatar, name, category, date, amount, recurring)
+-- VALUES ('USER_UUID', '/assets/images/avatars/default.jpg', 'Sample', 'General', now(), 100, false);
