@@ -1,16 +1,5 @@
 {
   "rewrites": [
-<<<<<<< HEAD
     { "source": "/(.*)", "destination": "/index.html" }
-=======
-    {
-      "source": "/api/:path*",
-      "destination": "https://rhfinance-production.up.railway.app/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
->>>>>>> ae78191afa578c360889abac109c62c29a292dd3
   ]
 }
