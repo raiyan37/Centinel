@@ -73,9 +73,15 @@ export function LoginPage() {
   /**
    * Handle Google sign-in (redirects to Google OAuth)
    */
-  const handleGoogleClick = () => {
+  const handleGoogleClick = async () => {
     setError(null);
-    loginWithGoogle();
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      // Browser/SDK can abort OAuth redirects when navigation state changes.
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setError(getErrorMessage(err));
+    }
   };
 
   const isLoading = isSubmitting;

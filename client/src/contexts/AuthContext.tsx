@@ -223,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loginWithGoogle = useCallback(async () => {
     clearUserData();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/overview`,
@@ -234,6 +234,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         },
       },
     });
+    if (error) throw error;
   }, [clearUserData]);
 
   const logout = useCallback(async () => {
