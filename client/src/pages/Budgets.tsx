@@ -183,11 +183,7 @@ export function BudgetsPage() {
         <div className="flex-1 space-y-6">
           {budgets.map((budget) => (
             <BudgetCard
-<<<<<<< HEAD
               key={budget.id}
-=======
-              key={budget._id}
->>>>>>> ae78191afa578c360889abac109c62c29a292dd3
               budget={budget}
               onEdit={() => handleEdit(budget)}
               onDelete={() => handleDelete(budget)}
