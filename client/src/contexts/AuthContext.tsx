@@ -227,6 +227,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/overview`,
+        queryParams: {
+          // Force Google to always show the account chooser instead of silently
+          // reusing the last active Google session.
+          prompt: 'select_account',
+        },
       },
     });
   }, [clearUserData]);
