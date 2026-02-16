@@ -67,27 +67,52 @@ interface AuthProviderProps {
 }
 
 async function fetchUserWithProfile(userId: string): Promise<User | null> {
-  const { data: profile, error } = await supabase
+  const { data: authUserRes } = await supabase.auth.getUser();
+  if (!authUserRes.user) return null;
+
+  let { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
 
-  if (error || !profile) return null;
+  // Self-heal missing profile rows for users created before trigger was configured
+  if (error || !profile) {
+    const fullName =
+      (authUserRes.user.user_metadata?.full_name as string | undefined) ??
+      (authUserRes.user.email?.split('@')[0] ?? 'User');
+    const avatarUrl = authUserRes.user.user_metadata?.avatar_url as string | undefined;
 
-  const { data: authUser } = await supabase.auth.getUser();
-  if (!authUser.user) return null;
+    const { data: inserted, error: insertError } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          id: userId,
+          full_name: fullName,
+          avatar_url: avatarUrl ?? null,
+          balance: 0,
+        },
+        { onConflict: 'id' }
+      )
+      .select('*')
+      .single();
 
-  const provider = authUser.user.app_metadata?.provider as string | undefined;
+    if (insertError || !inserted) {
+      return null;
+    }
+    profile = inserted;
+  }
+
+  const provider = authUserRes.user.app_metadata?.provider as string | undefined;
   const authProvider = provider === 'google' ? 'google' : 'local';
 
   return {
     id: profile.id,
-    email: authUser.user.email ?? '',
+    email: authUserRes.user.email ?? '',
     fullName: profile.full_name ?? 'User',
     balance: Number(profile.balance ?? 0),
     avatarUrl: profile.avatar_url ?? undefined,
-    verified: !!authUser.user.email_confirmed_at,
+    verified: !!authUserRes.user.email_confirmed_at,
     authProvider,
     createdAt: profile.created_at ?? new Date().toISOString(),
     updatedAt: profile.updated_at ?? new Date().toISOString(),

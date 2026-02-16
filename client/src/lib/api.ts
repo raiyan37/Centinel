@@ -465,19 +465,25 @@ export async function withdrawFromPot(
 // =============================================================================
 
 export async function getOverview(): Promise<OverviewResponse> {
-  const result = await invokeEdgeFunction<OverviewResponse>('overview');
-  return result;
+  const { data, error } = await supabase.rpc('get_overview');
+  if (error) throw error;
+  if (!data) throw new Error('No overview data returned');
+  if (data?.error) throw new Error(data.error);
+  return data as OverviewResponse;
 }
 
 export async function getBalance(): Promise<{
   success: boolean;
   data: { currentBalance: number; income: number; expenses: number };
 }> {
-  const result = await invokeEdgeFunction<{
+  const { data, error } = await supabase.rpc('get_balance');
+  if (error) throw error;
+  if (!data) throw new Error('No balance data returned');
+  if (data?.error) throw new Error(data.error);
+  return data as {
     success: boolean;
     data: { currentBalance: number; income: number; expenses: number };
-  }>('balance');
-  return result;
+  };
 }
 
 // =============================================================================
