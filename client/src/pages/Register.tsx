@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts';
 import { Button, Input, Label } from '@/components/ui';
-import { getErrorMessage, isNetworkError } from '@/lib/errorUtils';
+import { getErrorMessage, isAbortError, isNetworkError } from '@/lib/errorUtils';
 import { emailSchema, passwordSchema, fullNameSchema } from '@/lib/validation';
 
 // =============================================================================
@@ -86,7 +86,7 @@ export function RegisterPage() {
       await loginWithGoogle();
     } catch (err) {
       // Browser/SDK can abort OAuth redirects when navigation state changes.
-      if (err instanceof DOMException && err.name === 'AbortError') return;
+      if (isAbortError(err)) return;
       setError(getErrorMessage(err));
     }
   };

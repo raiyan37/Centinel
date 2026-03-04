@@ -95,6 +95,30 @@ export function isNetworkError(error: unknown): boolean {
 }
 
 /**
+ * Check if error is an aborted request/navigation error
+ */
+export function isAbortError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return true;
+  }
+
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name?: unknown }).name === 'AbortError'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Check if error is a timeout error
  */
 export function isTimeoutError(error: unknown): boolean {
@@ -441,6 +465,7 @@ export default {
   getContextualErrorMessage,
   getFieldErrors,
   isNetworkError,
+  isAbortError,
   isTimeoutError,
   isValidationError,
   isAuthError,
