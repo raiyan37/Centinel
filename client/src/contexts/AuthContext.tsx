@@ -66,6 +66,27 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function mapAuthUserToFallback(authUser: NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user']>): User {
+  const provider = authUser.app_metadata?.provider as string | undefined;
+  const authProvider = provider === 'google' ? 'google' : 'local';
+  const fullName =
+    (authUser.user_metadata?.full_name as string | undefined) ??
+    (authUser.user_metadata?.name as string | undefined) ??
+    (authUser.email?.split('@')[0] ?? 'User');
+
+  return {
+    id: authUser.id,
+    email: authUser.email ?? '',
+    fullName,
+    balance: 0,
+    avatarUrl: (authUser.user_metadata?.avatar_url as string | undefined) ?? undefined,
+    verified: !!authUser.email_confirmed_at,
+    authProvider,
+    createdAt: authUser.created_at ?? new Date().toISOString(),
+    updatedAt: authUser.updated_at ?? authUser.created_at ?? new Date().toISOString(),
+  };
+}
+
 async function fetchUserWithProfile(userId: string): Promise<User | null> {
   const { data: authUserRes } = await supabase.auth.getUser();
   if (!authUserRes.user) return null;
@@ -98,7 +119,8 @@ async function fetchUserWithProfile(userId: string): Promise<User | null> {
       .single();
 
     if (insertError || !inserted) {
-      return null;
+      // Keep auth alive in the UI even if profile provisioning fails.
+      return mapAuthUserToFallback(authUserRes.user);
     }
     profile = inserted;
   }
@@ -226,7 +248,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/overview`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
           // Force Google to always show the account chooser instead of silently
           // reusing the last active Google session.

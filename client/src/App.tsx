@@ -39,6 +39,9 @@ const LoginPage = lazy(() =>
 const RegisterPage = lazy(() =>
   import('@/pages/Register').then((module) => ({ default: module.RegisterPage }))
 );
+const AuthCallbackPage = lazy(() =>
+  import('@/pages/AuthCallback').then((module) => ({ default: module.AuthCallbackPage }))
+);
 
 // Protected pages (app routes)
 const OverviewPage = lazy(() =>
@@ -147,6 +150,14 @@ function AppRoutes() {
               <RegisterPage />
             </Suspense>
           </GuestRoute>
+        }
+      />
+      <Route
+        path="/auth/callback"
+        element={
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthCallbackPage />
+          </Suspense>
         }
       />
 
