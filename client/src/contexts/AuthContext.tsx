@@ -97,8 +97,11 @@ function mapAuthUserToFallback(authUser: NonNullable<Awaited<ReturnType<typeof s
 }
 
 async function fetchUserWithProfile(userId: string): Promise<User | null> {
-  const { data: authUserRes } = await supabase.auth.getUser();
-  if (!authUserRes.user) return null;
+  // Use getSession() (reads from localStorage, no network round-trip) instead of
+  // getUser() (always hits the server) so this never hangs after OAuth callbacks.
+  const { data: { session } } = await supabase.auth.getSession();
+  const authUser = session?.user;
+  if (!authUser) return null;
 
   let { data: profile, error } = await supabase
     .from('profiles')
@@ -109,9 +112,10 @@ async function fetchUserWithProfile(userId: string): Promise<User | null> {
   // Self-heal missing profile rows for users created before trigger was configured
   if (error || !profile) {
     const fullName =
-      (authUserRes.user.user_metadata?.full_name as string | undefined) ??
-      (authUserRes.user.email?.split('@')[0] ?? 'User');
-    const avatarUrl = authUserRes.user.user_metadata?.avatar_url as string | undefined;
+      (authUser.user_metadata?.full_name as string | undefined) ??
+      (authUser.user_metadata?.name as string | undefined) ??
+      (authUser.email?.split('@')[0] ?? 'User');
+    const avatarUrl = authUser.user_metadata?.avatar_url as string | undefined;
 
     const { data: inserted, error: insertError } = await supabase
       .from('profiles')
@@ -129,21 +133,21 @@ async function fetchUserWithProfile(userId: string): Promise<User | null> {
 
     if (insertError || !inserted) {
       // Keep auth alive in the UI even if profile provisioning fails.
-      return mapAuthUserToFallback(authUserRes.user);
+      return mapAuthUserToFallback(authUser);
     }
     profile = inserted;
   }
 
-  const provider = authUserRes.user.app_metadata?.provider as string | undefined;
+  const provider = authUser.app_metadata?.provider as string | undefined;
   const authProvider = provider === 'google' ? 'google' : 'local';
 
   return {
     id: profile.id,
-    email: authUserRes.user.email ?? '',
+    email: authUser.email ?? '',
     fullName: profile.full_name ?? 'User',
     balance: Number(profile.balance ?? 0),
     avatarUrl: profile.avatar_url ?? undefined,
-    verified: !!authUserRes.user.email_confirmed_at,
+    verified: !!authUser.email_confirmed_at,
     authProvider,
     createdAt: profile.created_at ?? new Date().toISOString(),
     updatedAt: profile.updated_at ?? new Date().toISOString(),
