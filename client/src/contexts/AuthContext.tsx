@@ -66,6 +66,15 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 function mapAuthUserToFallback(authUser: NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user']>): User {
   const provider = authUser.app_metadata?.provider as string | undefined;
   const authProvider = provider === 'google' ? 'google' : 'local';
@@ -169,7 +178,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        await loadUser(session.user.id);
+        // 10 s timeout so a paused/unreachable Supabase never freezes the UI.
+        await withTimeout(loadUser(session.user.id), 10_000);
       } else {
         previousUserIdRef.current = null;
         setUser(null);
