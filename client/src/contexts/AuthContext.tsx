@@ -290,7 +290,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshUser = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      await loadUser(session.user.id);
+      await withTimeout(loadUser(session.user.id), 10_000);
     } else {
       setUser(null);
     }

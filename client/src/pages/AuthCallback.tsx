@@ -23,7 +23,11 @@ export function AuthCallbackPage() {
         return;
       }
 
-      await refreshUser();
+      try {
+        await refreshUser();
+      } catch {
+        // refreshUser timed out or failed — still navigate so we don't spin forever.
+      }
       if (cancelled) return;
 
       navigate('/overview', { replace: true });
